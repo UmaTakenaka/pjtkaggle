@@ -17,9 +17,10 @@ def kesson_table(df):
     columns = {0:'欠損値', 1:'%'})
     return kesson_table_ren_columns
 
-kesson_table(train)
+train.head()
 
 #%%
+# 欠損値の埋め方
 train["Age"] = train["Age"].fillna(train["Age"].median())
 train["Embarked"] = train["Embarked"].fillna("S")
 
@@ -27,16 +28,12 @@ kesson_table(train)
 
 
 #%%
-
+# 名義尺度の置き換え
 train["Sex"][train["Sex"] == "male"] = 0
 train["Sex"][train["Sex"] == "female"] = 1
 train["Embarked"][train["Embarked"] == "S" ] = 0
 train["Embarked"][train["Embarked"] == "C" ] = 1
 train["Embarked"][train["Embarked"] == "Q"] = 2
- 
-train.head(10)
-
-#%%
 
 test["Age"] = test["Age"].fillna(test["Age"].median())
 test["Sex"][test["Sex"] == "male"] = 0
@@ -45,8 +42,6 @@ test["Embarked"][test["Embarked"] == "S"] = 0
 test["Embarked"][test["Embarked"] == "C"] = 1
 test["Embarked"][test["Embarked"] == "Q"] = 2
 test.Fare[152] = test.Fare.median()
- 
-test.head(10)
 
 #%%
 # SVMによる予測
@@ -84,5 +79,6 @@ my_solution = pd.DataFrame(my_prediction2, PassengerId, columns = ["Survived"])
 # my_tree_one.csvとして書き出し
 my_solution.to_csv("my_forest_one.csv", index_label = ["PassengerId"])
 
-#%
 
+
+#%%
