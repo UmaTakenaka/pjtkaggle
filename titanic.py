@@ -5,8 +5,7 @@ from sklearn.svm import SVC
 from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier
 import matplotlib.pyplot as plt
-from sklearn import grid_search
-from sklearn.grid_search import GridSearchCV
+from sklearn.model_selection import GridSearchCV
 
 train = pd.read_csv("train.csv")
 test = pd.read_csv("test.csv")
