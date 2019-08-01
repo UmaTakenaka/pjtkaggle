@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier
+import matplotlib.pyplot as plt
 
 #%%
 train = pd.read_csv("train.csv")
@@ -17,15 +18,17 @@ def kesson_table(df):
     columns = {0:'欠損値', 1:'%'})
     return kesson_table_ren_columns
 
-train.head()
+kesson_table(test)
 
 #%%
 # 欠損値の埋め方
-train["Age"] = train["Age"].fillna(train["Age"].median())
+# train["Age"] = train["Age"].fillna(train["Age"].median())
+train = train.dropna(subset = ["Age"])
 train["Embarked"] = train["Embarked"].fillna("S")
 
-kesson_table(train)
-
+# kesson_table(train)
+# plt.hist(train["Age"], bins=20)
+train.describe()
 
 #%%
 # 名義尺度の置き換え
@@ -75,10 +78,8 @@ print(my_prediction2)
 # PassengerIdを取得
 PassengerId = np.array(test["PassengerId"]).astype(int)
 # my_prediction(予測データ）とPassengerIdをデータフレームへ落とし込む
-my_solution = pd.DataFrame(my_prediction2, PassengerId, columns = ["Survived"])
+my_solution = pd.DataFrame(my_prediction, PassengerId, columns = ["Survived"])
 # my_tree_one.csvとして書き出し
 my_solution.to_csv("my_forest_one.csv", index_label = ["PassengerId"])
-
-
 
 #%%
