@@ -11,13 +11,13 @@ from sklearn.grid_search import GridSearchCV
 train = pd.read_csv("train.csv")
 test = pd.read_csv("test.csv")
 
-def kesson_table(df):
+def Missing_table(df):
     null_val = df.isnull().sum()
     percent = 100 * null_val/len(df)
-    kesson_table = pd.concat([null_val, percent], axis = 1)
-    kesson_table_ren_columns = kesson_table.rename(
+    Missing_table = pd.concat([null_val, percent], axis = 1)
+    missing_table_len = Missing_table.rename(
     columns = {0:'欠損値', 1:'%'})
-    return kesson_table_ren_columns
+    return missing_table_len
 
 # 欠損値の埋め方
 # train["Age"] = train["Age"].fillna(train["Age"].median())
@@ -27,7 +27,7 @@ train["Embarked"] = train["Embarked"].fillna("S")
 
 train["FSize"] = train["SibSp"] + train["Parch"] + 1
 
-# kesson_table(train)
+# Missing_table(train)
 # plt.hist(train["Age"], bins=20)
 
 # 名義尺度の置き換え
