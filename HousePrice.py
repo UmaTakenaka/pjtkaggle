@@ -15,7 +15,8 @@ train.describe()
 
 #%%
 def Missing_table(df):
-    null_val = df.isnull().sum()
+    # null_val = df.isnull().sum()
+    null_val = df.isnull().sum()[train.isnull().sum()>0].sort_values(ascending=False)
     percent = 100 * null_val/len(df)
     Missing_table = pd.concat([null_val, percent], axis = 1)
     missing_table_len = Missing_table.rename(
@@ -23,6 +24,14 @@ def Missing_table(df):
     return missing_table_len
 
 Missing_table(train)
+
+#%%
+def Missing_type(df):
+    na_col_list = df.isnull().sum()[df.isnull().sum()>0].index.tolist() # 欠損を含むカラムをリスト化
+    list_type = df[na_col_list].dtypes.sort_values() #データ型
+    return list_type
+
+Missing_type(train)
 
 #%%
 # 欠損値の埋め方
