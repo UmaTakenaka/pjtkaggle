@@ -18,20 +18,15 @@ def Missing_table(df):
     # null_val = df.isnull().sum()
     null_val = df.isnull().sum()[train.isnull().sum()>0].sort_values(ascending=False)
     percent = 100 * null_val/len(df)
-    Missing_table = pd.concat([null_val, percent], axis = 1)
+    na_col_list = df.isnull().sum()[df.isnull().sum()>0].index.tolist() # 欠損を含むカラムをリスト化
+    list_type = df[na_col_list].dtypes.sort_values(ascending=False) #データ型
+    Missing_table = pd.concat([null_val, percent, list_type], axis = 1)
     missing_table_len = Missing_table.rename(
-    columns = {0:'欠損値', 1:'%'})
-    return missing_table_len
+    columns = {0:'欠損値', 1:'%', 2:'type'})
+    return missing_table_len.sort_values(by=['欠損値'], ascending=False)
 
 Missing_table(train)
-
-#%%
-def Missing_type(df):
-    na_col_list = df.isnull().sum()[df.isnull().sum()>0].index.tolist() # 欠損を含むカラムをリスト化
-    list_type = df[na_col_list].dtypes.sort_values() #データ型
-    return list_type
-
-Missing_type(train)
+# plt.hist(np.log(train['SalePrice']), bins=50)
 
 #%%
 # 欠損値の埋め方
