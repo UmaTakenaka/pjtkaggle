@@ -16,7 +16,7 @@ train.describe()
 #%%
 def Missing_table(df):
     # null_val = df.isnull().sum()
-    null_val = df.isnull().sum()[train.isnull().sum()>0].sort_values(ascending=False)
+    null_val = df.isnull().sum()[train.isnull().sum()>0]
     percent = 100 * null_val/len(df)
     Missing_table = pd.concat([null_val, percent], axis = 1)
     missing_table_len = Missing_table.rename(
