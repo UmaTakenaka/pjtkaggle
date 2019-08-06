@@ -10,10 +10,11 @@ from sklearn.model_selection import GridSearchCV
 train = pd.read_csv("hp_train.csv")
 test = pd.read_csv("hp_test.csv")
 
-train.describe()
+# train.describe()
 
 
 #%%
+# サンプルから欠損値と割合、データ型を調べる関数
 def Missing_table(df):
     # null_val = df.isnull().sum()
     null_val = df.isnull().sum()[train.isnull().sum()>0].sort_values(ascending=False)
@@ -29,76 +30,34 @@ Missing_table(train)
 # plt.hist(np.log(train['SalePrice']), bins=50)
 
 #%%
-# 欠損値の埋め方
-# train["Age"] = train["Age"].fillna(train["Age"].median())
-train["Age"] = train["Age"].fillna(train["Age"].mean())
-# train = train.dropna(subset = ["Age"])
-train["Embarked"] = train["Embarked"].fillna("S")
+# 訓練データ特徴量をリスト化
+train_cat_cols = train.dtypes[train.dtypes=='object'].index.tolist()
+train_num_cols = train.dtypes[train.dtypes!='object'].index.tolist()
 
-# train["FSize"] = train["SibSp"] + train["Parch"] + 1
+train_cat = pd.get_dummies(train[train_cat_cols])
 
-# Missing_table(train)
-plt.hist(train["Age"], bins=20)
+# データ統合
+train_all_data = pd.concat([train[train_num_cols].fillna(0),train_cat],axis=1)
 
-#%%
-# 名義尺度の置き換え
-train["Sex"][train["Sex"] == "male"] = 0
-train["Sex"][train["Sex"] == "female"] = 1
-train["Embarked"][train["Embarked"] == "S" ] = 0
-train["Embarked"][train["Embarked"] == "C" ] = 1
-train["Embarked"][train["Embarked"] == "Q"] = 2
+train_all_data.describe()
 
-# test["Age"] = test["Age"].fillna(test["Age"].median())
-test["Age"] = test["Age"].fillna(test["Age"].mean())
-# test = test.dropna(subset = ["Age"])
-test["Sex"][test["Sex"] == "male"] = 0
-test["Sex"][test["Sex"] == "female"] = 1
-test["Embarked"][test["Embarked"] == "S"] = 0
-test["Embarked"][test["Embarked"] == "C"] = 1
-test["Embarked"][test["Embarked"] == "Q"] = 2
-test.Fare[152] = test.Fare.mean()
-# test["FSize"] = test["SibSp"] + test["Parch"] + 1
+# テストデータ特徴量をリスト化
+test_cat_cols = test.dtypes[train.dtypes=='object'].index.tolist()
+test_num_cols = test.dtypes[train.dtypes!='object'].index.tolist()
 
+test_cat = pd.get_dummies(test[test_cat_cols])
+
+# データ統合
+test_all_data = pd.concat([test[test_num_cols].fillna(0),test_cat],axis=1)
+
+test_all_data.describe()
 
 #%%
-# SVMによる予測
+# lasso回帰による予測
 
-x_ = train["Survived"].values
-y_ = train[["Pclass", "Age", "Sex", "Fare", "SibSp", "Parch", "Embarked"]].values
+x_ = train_all_data.drop('SalePrice',axis=1)
+y_ = train_all_data.loc[:, ['SalePrice']]
 
-model = SVC(kernel='linear', random_state=None)
-model.fit(y_, x_)
- 
-# 「test」の説明変数の値を取得
-test_features = test[["Pclass", "Age", "Sex", "Fare", "SibSp", "Parch", "Embarked"]].values
-my_prediction = model.predict(test_features)
-
-print(my_prediction)
-
-#%%
-# Random Forestによる予測
-
-x2_ = train["Survived"].values
-y2_ = train[["Pclass", "Age", "Sex", "Fare", "SibSp", "Parch", "Embarked"]].values
-
-# clf = RandomForestClassifier(random_state=0)
-
-
-parameters = {
-        'n_estimators'      : [10,25,50,75,100],
-        'random_state'      : [0],
-        'n_jobs'            : [4],
-        'min_samples_split' : [5,10, 15, 20,25, 30],
-        'max_depth'         : [5, 10, 15,20,25,30]
-}
-clf = GridSearchCV(RandomForestClassifier(), parameters)
-
-clf.fit(y2_, x2_)
-
-# 「test」の説明変数の値を取得
-feature = test[["Pclass", "Age", "Sex", "Fare", "SibSp", "Parch", "Embarked"]].values
-prediction = clf.predict(feature)
-print(prediction)
 
 #%%
 # PassengerIdを取得
