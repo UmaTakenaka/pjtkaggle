@@ -5,8 +5,8 @@ import numpy as np
 from sklearn.metrics import classification_report
 # from sklearn.ensemble import RandomForestClassifier
 import matplotlib.pyplot as plt
-# from sklearn.model_selection import GridSearchCV
-from sklearn.linear_model import Lasso
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import Lasso, ElasticNet
 
 train = pd.read_csv("hp_train.csv")
 test = pd.read_csv("hp_test.csv")
@@ -69,6 +69,42 @@ print(f"training dataに対しての精度: {lasso.score(x_, y_):.2}")
 
 test_feature = test_.drop('Id',axis=1)
 prediction = lasso.predict(test_feature)
+
+#%%
+# ElasticNetによる予測
+train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
+
+x_ = train_.drop('SalePrice',axis=1)
+y_ = train_.loc[:, ['SalePrice']]
+y_ = np.log(y_)
+
+En = ElasticNet().fit(x_, y_)
+print(f"training dataに対しての精度: {En.score(x_, y_):.2}")
+
+test_feature = test_.drop('Id',axis=1)
+prediction = np.exp(En.predict(test_feature))
+
+#%%
+# ElasticNetによるパラメータチューニング
+train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
+
+x_ = train_.drop('SalePrice',axis=1)
+y_ = train_.loc[:, ['SalePrice']]
+y_ = np.log(y_)
+
+parameters = {
+        'alpha'      : [0.001, 0.01, 0.1, 1, 10, 100],
+        'l1_ratio'   : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+}
+
+En = GridSearchCV(ElasticNet(), parameters)
+En.fit(x_, y_)
+print(f"training dataに対しての精度: {En.score(x_, y_):.2}")
+
+test_feature = test_.drop('Id',axis=1)
+prediction = np.exp(En.predict(test_feature))
 
 
 #%%
