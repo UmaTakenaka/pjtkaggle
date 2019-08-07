@@ -11,7 +11,7 @@ from sklearn.linear_model import Lasso, ElasticNet
 train = pd.read_csv("hp_train.csv")
 test = pd.read_csv("hp_test.csv")
 
-# train.describe()
+train.describe()
 
 
 #%%
@@ -53,7 +53,8 @@ cat = pd.get_dummies(alldata[cat_cols])
 # データ統合
 all_data = pd.concat([alldata[other_cols],alldata[num_cols].fillna(0),cat],axis=1)
 
-all_data.describe()
+plt.hist(np.log(train['SalePrice']), bins=50)
+# plt.hist(train['SalePrice'], bins=50)
 
 
 #%%
