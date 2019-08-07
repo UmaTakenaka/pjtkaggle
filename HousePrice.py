@@ -1,16 +1,17 @@
 #%%
 import pandas as pd
 import numpy as np
-from sklearn.svm import SVC
+# from sklearn.svm import SVC
 from sklearn.metrics import classification_report
-from sklearn.ensemble import RandomForestClassifier
+# from sklearn.ensemble import RandomForestClassifier
 import matplotlib.pyplot as plt
 from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import Lasso, ElasticNet
 
 train = pd.read_csv("hp_train.csv")
 test = pd.read_csv("hp_test.csv")
 
-# train.describe()
+train.describe()
 
 
 #%%
@@ -30,41 +31,89 @@ Missing_table(train)
 # plt.hist(np.log(train['SalePrice']), bins=50)
 
 #%%
+train['WhatIsData'] = 'Train'
+test['WhatIsData'] = 'Test'
+test['SalePrice'] = 9999999999
+alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
+
+alldata.head()
+
+#%%
 # 訓練データ特徴量をリスト化
-train_cat_cols = train.dtypes[train.dtypes=='object'].index.tolist()
-train_num_cols = train.dtypes[train.dtypes!='object'].index.tolist()
+cat_cols = alldata.dtypes[train.dtypes=='object'].index.tolist()
+num_cols = alldata.dtypes[train.dtypes!='object'].index.tolist()
 
-train_cat = pd.get_dummies(train[train_cat_cols])
+other_cols = ['Id','WhatIsData']
+# 余計な要素をリストから削除
+cat_cols.remove('WhatIsData') #学習データ・テストデータ区別フラグ除去
+num_cols.remove('Id') #Id削除
 
-# データ統合
-train_all_data = pd.concat([train[train_num_cols].fillna(0),train_cat],axis=1)
-
-train_all_data.describe()
-
-# テストデータ特徴量をリスト化
-test_cat_cols = test.dtypes[train.dtypes=='object'].index.tolist()
-test_num_cols = test.dtypes[train.dtypes!='object'].index.tolist()
-
-test_cat = pd.get_dummies(test[test_cat_cols])
+cat = pd.get_dummies(alldata[cat_cols])
 
 # データ統合
-test_all_data = pd.concat([test[test_num_cols].fillna(0),test_cat],axis=1)
+all_data = pd.concat([alldata[other_cols],alldata[num_cols].fillna(0),cat],axis=1)
 
-test_all_data.describe()
+plt.hist(np.log(train['SalePrice']), bins=50)
+# plt.hist(train['SalePrice'], bins=50)
+
 
 #%%
 # lasso回帰による予測
+train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
 
-x_ = train_all_data.drop('SalePrice',axis=1)
-y_ = train_all_data.loc[:, ['SalePrice']]
+x_ = train_.drop('SalePrice',axis=1)
+y_ = train_.loc[:, ['SalePrice']]
+
+lasso = Lasso().fit(x_, y_)
+print(f"training dataに対しての精度: {lasso.score(x_, y_):.2}")
+
+test_feature = test_.drop('Id',axis=1)
+prediction = lasso.predict(test_feature)
+
+#%%
+# ElasticNetによる予測
+train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
+
+x_ = train_.drop('SalePrice',axis=1)
+y_ = train_.loc[:, ['SalePrice']]
+y_ = np.log(y_)
+
+En = ElasticNet().fit(x_, y_)
+print(f"training dataに対しての精度: {En.score(x_, y_):.2}")
+
+test_feature = test_.drop('Id',axis=1)
+prediction = np.exp(En.predict(test_feature))
+
+#%%
+# ElasticNetによるパラメータチューニング
+train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
+
+x_ = train_.drop('SalePrice',axis=1)
+y_ = train_.loc[:, ['SalePrice']]
+y_ = np.log(y_)
+
+parameters = {
+        'alpha'      : [0.001, 0.01, 0.1, 1, 10, 100],
+        'l1_ratio'   : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+}
+
+En = GridSearchCV(ElasticNet(), parameters)
+En.fit(x_, y_)
+print(f"training dataに対しての精度: {En.score(x_, y_):.2}")
+
+test_feature = test_.drop('Id',axis=1)
+prediction = np.exp(En.predict(test_feature))
 
 
 #%%
-# PassengerIdを取得
-PassengerId = np.array(test["PassengerId"]).astype(int)
+# Idを取得
+Id = np.array(test["Id"]).astype(int)
 # my_prediction(予測データ）とPassengerIdをデータフレームへ落とし込む
-result = pd.DataFrame(prediction, PassengerId, columns = ["Survived"])
+result = pd.DataFrame(prediction, Id, columns = ["SalePrice"])
 # my_tree_one.csvとして書き出し
-result.to_csv("prediction_forest.csv", index_label = ["PassengerId"])
+result.to_csv("prediction_regression.csv", index_label = ["Id"])
 
 #%%
