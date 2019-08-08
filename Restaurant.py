@@ -7,6 +7,7 @@ from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, ElasticNet
+from sklearn.ensemble import RandomForestRegressor
 
 train = pd.read_csv("rest_train.csv")
 test = pd.read_csv("rest_test.csv")
@@ -81,6 +82,20 @@ all_data = pd.concat([alldata[other_cols],alldata[num_cols].fillna(0),cat],axis=
 #%%
 all_data.head()
 
+#%%
+# RandomForestRegressorによる予測
+train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
+
+x_ = train_.drop('revenue',axis=1)
+y_ = train_.loc[:, ['revenue']]
+# y_ = np.log(y_)
+
+forest = RandomForestRegressor().fit(x_, y_)
+print(f"training dataに対しての精度: {forest.score(x_, y_):.2}")
+
+test_feature = test_.drop('Id',axis=1)
+prediction = np.exp(forest.predict(test_feature))
 
 #%%
 # lasso回帰による予測
@@ -140,6 +155,6 @@ Id = np.array(test["Id"]).astype(int)
 # my_prediction(予測データ）とPassengerIdをデータフレームへ落とし込む
 result = pd.DataFrame(prediction, Id, columns = ["revenue"])
 # my_tree_one.csvとして書き出し
-result.to_csv("prediction_regression.csv", index_label = ["Id"])
+result.to_csv("prediction_Restaurant.csv", index_label = ["Id"])
 
 #%%
