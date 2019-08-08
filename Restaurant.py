@@ -9,11 +9,10 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, ElasticNet
 from sklearn.ensemble import RandomForestRegressor
 import lightgbm as lgb
+from sklearn.model_selection import train_test_split
 
 train = pd.read_csv("rest_train.csv")
 test = pd.read_csv("rest_test.csv")
-
-train.describe()
 
 
 #%%
@@ -91,32 +90,37 @@ test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], 
 x_ = train_.drop('revenue',axis=1)
 y_ = train_.loc[:, ['revenue']]
 y_ = np.log(y_)
+test_feature = test_.drop('Id',axis=1)
 
-lgb_train = lgb.Dataset(x_, y_)
+X_train, X_test, y_train, y_test = train_test_split(
+    x_, y_, test_size=0.33, random_state=201612
+)
 
+lgb_train = lgb.Dataset(X_train, y_train)
+lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
 # LightGBM parameters
 params = {
-        'task': 'train',
-        'boosting_type': 'gbdt',
-        'objective': 'multiclass',
-        'metric': {'multi_logloss'},
-        'num_class': 3,
-        'learning_rate': 0.1,
-        'num_leaves': 23,
-        'min_data_in_leaf': 1,
-        'num_iteration': 100,
-        'verbose': 0
+        'task' : 'train',
+        'boosting_type' : 'gbdt',
+        'objective' : 'regression',
+        'metric' : {'l2'},
+        'num_leaves' : 31,
+        'learning_rate' : 0.1,
+        'feature_fraction' : 0.9,
+        'bagging_fraction' : 0.8,
+        'bagging_freq': 5,
+        'verbose' : 0
 }
 
 # train
 gbm = lgb.train(params,
             lgb_train,
-            num_boost_round=50,
+            num_boost_round=100,
+            valid_sets=lgb_eval,
             early_stopping_rounds=10)
 
-test_feature = test_.drop('Id',axis=1)
-y_pred = gbm.predict(test_feature, num_iteration=gbm.best_iteration)
-print(f"training dataに対しての精度: {gbm.score(x_, y_):.2}")
+# print(f"training dataに対しての精度: {gbm.score(x_, y_):.2}")
+prediction = np.exp(gbm.predict(test_feature))
 
 #%%
 # RandomForestRegressorによる予測
