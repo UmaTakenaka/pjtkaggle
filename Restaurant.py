@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 # from sklearn.svm import SVC
 from sklearn.metrics import classification_report
+from sklearn import metrics
 # from sklearn.ensemble import RandomForestClassifier
 import matplotlib.pyplot as plt
 from sklearn.model_selection import GridSearchCV
@@ -11,6 +12,7 @@ from sklearn.ensemble import RandomForestRegressor
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split, cross_val_score
 
+#%%
 train = pd.read_csv("rest_train.csv")
 test = pd.read_csv("rest_test.csv")
 
@@ -40,11 +42,6 @@ def Datatype_table(df):
 Datatype_table(train)
 
 #%%
-train[['Open Date', 'City', 'City Group', 'Type']].describe()
-# pd.pivot_table(train, index='City', columns='City Group')
-# plt.hist(np.log(train['revenue']), bins=20)
-
-#%%
 train['WhatIsData'] = 'Train'
 test['WhatIsData'] = 'Test'
 test['revenue'] = 9999999999
@@ -57,9 +54,6 @@ alldata["Day"] = alldata["Open Date"].apply(lambda x:x.day)
 
 alldata = alldata.drop('Open Date', axis=1)
 
-#%%
-# alldata.head()
-Datatype_table(alldata)
 
 #%%
 # 訓練データ特徴量をリスト化
@@ -79,8 +73,6 @@ all_data = pd.concat([alldata[other_cols],alldata[num_cols].fillna(0),cat],axis=
 
 # plt.hist(np.log(train['revenue']), bins=50)
 # plt.hist(train['revenue'], bins=50)
-#%%
-all_data.head()
 
 #%%
 # lightGBMによる予測
@@ -119,8 +111,8 @@ gbm = lgb.train(params,
             valid_sets=lgb_eval,
             early_stopping_rounds=10)
 
-# print(f"training dataに対しての精度: {gbm.score(x_, y_):.2}")
 prediction = np.exp(gbm.predict(test_feature))
+
 
 #%%
 # RandomForestRegressorによる予測
