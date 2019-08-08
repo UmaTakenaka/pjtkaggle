@@ -89,12 +89,13 @@ test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], 
 
 x_ = train_.drop('revenue',axis=1)
 y_ = train_.loc[:, ['revenue']]
+# y_ = np.log(y_)
 
 lasso = Lasso().fit(x_, y_)
 print(f"training dataに対しての精度: {lasso.score(x_, y_):.2}")
 
 test_feature = test_.drop('Id',axis=1)
-prediction = lasso.predict(test_feature)
+prediction = np.exp(lasso.predict(test_feature))
 
 #%%
 # ElasticNetによる予測
