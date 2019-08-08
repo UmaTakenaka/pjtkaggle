@@ -9,7 +9,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, ElasticNet
 from sklearn.ensemble import RandomForestRegressor
 import lightgbm as lgb
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 
 train = pd.read_csv("rest_train.csv")
 test = pd.read_csv("rest_test.csv")
