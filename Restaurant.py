@@ -89,7 +89,7 @@ test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], 
 
 x_ = train_.drop('revenue',axis=1)
 y_ = train_.loc[:, ['revenue']]
-# y_ = np.log(y_)
+y_ = np.log(y_)
 
 forest = RandomForestRegressor().fit(x_, y_)
 print(f"training dataに対しての精度: {forest.score(x_, y_):.2}")
@@ -153,7 +153,7 @@ prediction = np.exp(En.predict(test_feature))
 # Idを取得
 Id = np.array(test["Id"]).astype(int)
 # my_prediction(予測データ）とPassengerIdをデータフレームへ落とし込む
-result = pd.DataFrame(prediction, Id, columns = ["revenue"])
+result = pd.DataFrame(prediction, Id, columns = ["Prediction"])
 # my_tree_one.csvとして書き出し
 result.to_csv("prediction_Restaurant.csv", index_label = ["Id"])
 
