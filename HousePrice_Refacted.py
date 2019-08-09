@@ -9,7 +9,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, ElasticNet
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 
 #%%
 train = pd.read_csv("hp_train.csv")
@@ -45,13 +45,12 @@ y_ = train_.loc[:, ['SalePrice']]
 y_ = np.log(y_)
 test_feature = test_.drop('Id',axis=1)
 
-
-#%%
-# lightGBMによる予測
 X_train, X_test, y_train, y_test = train_test_split(
     x_, y_, test_size=0.33, random_state=201612
 )
 
+#%%
+# lightGBMによる予測
 lgb_train = lgb.Dataset(X_train, y_train)
 lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
 # LightGBM parameters
@@ -75,16 +74,18 @@ gbm = lgb.train(params,
             valid_sets=lgb_eval,
             early_stopping_rounds=10)
 
+# prediction_train = gbm.predict(X_train)
 
-prediction_train = gbm.predict(X_train)
-y_pred = prediction_train.tolist()
-y_true = y_train['SalePrice'].tolist()
-acc_lgb = f1_score(y_true, y_pred)
-# acc_dic.update(model_lgb = acc_lgb)
-# acc_dic
+# y_pred = []
+# for x in prediction_train:
+#         y_pred.append(x)
+
+# y_true = y_train['SalePrice'].tolist()
+
+# acc_lightGBM =  mean_squared_error(y_true, np.exp(y_pred))
+# acc_dic.update(model_lightGBM = round(acc_lightGBM,3))
 
 prediction_lgb = np.exp(gbm.predict(test_feature))
-
 
 #%%
 # lasso回帰による予測
@@ -125,6 +126,7 @@ print('best_params : {}'.format(En2.best_params_))
 prediction = np.exp(En.predict(test_feature))
 
 #%%
+# 各モデルの訓練データに対する精度をDataFrame化
 Acc = pd.DataFrame([], columns=acc_dic.keys())
 dict_array = []
 for i in acc_dic.items():
@@ -136,7 +138,7 @@ Acc[0]
 # Idを取得
 Id = np.array(test["Id"]).astype(int)
 # my_prediction(予測データ）とPassengerIdをデータフレームへ落とし込む
-result = pd.DataFrame(prediction, Id, columns = ["SalePrice"])
+result = pd.DataFrame(prediction_lgb, Id, columns = ["SalePrice"])
 # my_tree_one.csvとして書き出し
 result.to_csv("prediction_regression.csv", index_label = ["Id"])
 
