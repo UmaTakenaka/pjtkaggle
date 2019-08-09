@@ -9,37 +9,20 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, ElasticNet
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.metrics import f1_score
 
+#%%
 train = pd.read_csv("hp_train.csv")
 test = pd.read_csv("hp_test.csv")
 
-# train.describe()
+acc_dic = {}
 
-#%%
-# サンプルから欠損値と割合、データ型を調べる関数
-def Missing_table(df):
-    # null_val = df.isnull().sum()
-    null_val = df.isnull().sum()[train.isnull().sum()>0].sort_values(ascending=False)
-    percent = 100 * null_val/len(df)
-    na_col_list = df.isnull().sum()[df.isnull().sum()>0].index.tolist() # 欠損を含むカラムをリスト化
-    list_type = df[na_col_list].dtypes.sort_values(ascending=False) #データ型
-    Missing_table = pd.concat([null_val, percent, list_type], axis = 1)
-    missing_table_len = Missing_table.rename(
-    columns = {0:'欠損値', 1:'%', 2:'type'})
-    return missing_table_len.sort_values(by=['欠損値'], ascending=False)
-
-Missing_table(train)
-# plt.hist(np.log(train['SalePrice']), bins=50)
-
-#%%
 train['WhatIsData'] = 'Train'
 test['WhatIsData'] = 'Test'
 test['SalePrice'] = 9999999999
 alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
 
-alldata.head()
 
-#%%
 # 訓練データ特徴量をリスト化
 cat_cols = alldata.dtypes[train.dtypes=='object'].index.tolist()
 num_cols = alldata.dtypes[train.dtypes!='object'].index.tolist()
@@ -53,20 +36,18 @@ cat = pd.get_dummies(alldata[cat_cols])
 
 # データ統合
 all_data = pd.concat([alldata[other_cols],alldata[num_cols].fillna(0),cat],axis=1)
-
-# plt.hist(np.log(train['SalePrice']), bins=50)
-# plt.hist(train['SalePrice'], bins=50)
-
-#%%
-# lightGBMによる予測
 train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
 test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
 
+# 特徴量生成
 x_ = train_.drop('SalePrice',axis=1)
 y_ = train_.loc[:, ['SalePrice']]
 y_ = np.log(y_)
 test_feature = test_.drop('Id',axis=1)
 
+
+#%%
+# lightGBMによる予測
 X_train, X_test, y_train, y_test = train_test_split(
     x_, y_, test_size=0.33, random_state=201612
 )
@@ -94,47 +75,40 @@ gbm = lgb.train(params,
             valid_sets=lgb_eval,
             early_stopping_rounds=10)
 
-prediction = np.exp(gbm.predict(test_feature))
+
+prediction_train = gbm.predict(X_train)
+y_pred = prediction_train.tolist()
+y_true = y_train['SalePrice'].tolist()
+acc_lgb = f1_score(y_true, y_pred)
+# acc_dic.update(model_lgb = acc_lgb)
+# acc_dic
+
+prediction_lgb = np.exp(gbm.predict(test_feature))
 
 
 #%%
 # lasso回帰による予測
-train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
+lasso = Lasso().fit(X_train, y_train)
 
-x_ = train_.drop('SalePrice',axis=1)
-y_ = train_.loc[:, ['SalePrice']]
+acc_lasso = lasso.score(X_train, y_train)
+acc_dic.update(model_lasso = round(acc_lasso,3))
+print(f"training dataに対しての精度: {lasso.score(X_train, y_train):.2}")
 
-lasso = Lasso().fit(x_, y_)
-print(f"training dataに対しての精度: {lasso.score(x_, y_):.2}")
+prediction_lasso = lasso.predict(test_feature)
 
-test_feature = test_.drop('Id',axis=1)
-prediction = lasso.predict(test_feature)
 
 #%%
 # ElasticNetによる予測
-train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
+En = ElasticNet().fit(X_train, y_train)
 
-x_ = train_.drop('SalePrice',axis=1)
-y_ = train_.loc[:, ['SalePrice']]
-y_ = np.log(y_)
+acc_ElasticNet = En.score(X_train, y_train)
+acc_dic.update(model_ElasticNet = round(acc_ElasticNet,3))
+print(f"training dataに対しての精度: {En.score(X_train, y_train):.2}")
 
-En = ElasticNet().fit(x_, y_)
-print(f"training dataに対しての精度: {En.score(x_, y_):.2}")
-
-test_feature = test_.drop('Id',axis=1)
-prediction = np.exp(En.predict(test_feature))
+prediction_ElasticNet = np.exp(En.predict(test_feature))
 
 #%%
 # ElasticNetによるパラメータチューニング
-train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
-
-x_ = train_.drop('SalePrice',axis=1)
-y_ = train_.loc[:, ['SalePrice']]
-y_ = np.log(y_)
-
 parameters = {
         'alpha'      : [0.001, 0.01, 0.1, 1, 10, 100],
         'l1_ratio'   : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
@@ -144,9 +118,16 @@ En = GridSearchCV(ElasticNet(), parameters)
 En.fit(x_, y_)
 print(f"training dataに対しての精度: {En.score(x_, y_):.2}")
 
-test_feature = test_.drop('Id',axis=1)
 prediction = np.exp(En.predict(test_feature))
 
+#%%
+Acc = pd.DataFrame([], columns=acc_dic.keys())
+dict_array = []
+for i in acc_dic.items():
+        dict_array.append(acc_dic)
+Acc = pd.concat([Acc, pd.DataFrame.from_dict(dict_array)]).T
+Acc_table = Acc.drop(1, axis=1).rename(columns = {0:'Accuracy'})
+Acc_table
 
 #%%
 # Idを取得
