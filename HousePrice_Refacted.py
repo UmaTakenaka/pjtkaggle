@@ -87,6 +87,7 @@ gbm = lgb.train(params,
 
 prediction_lgb = np.exp(gbm.predict(test_feature))
 
+
 #%%
 # lasso回帰による予測
 lasso = Lasso().fit(X_train, y_train)
