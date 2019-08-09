@@ -110,14 +110,18 @@ prediction_ElasticNet = np.exp(En.predict(test_feature))
 #%%
 # ElasticNetによるパラメータチューニング
 parameters = {
-        'alpha'      : [0.001, 0.01, 0.1, 1, 10, 100],
-        'l1_ratio'   : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+        'alpha'      : [0.001, 0.00125, 0.0015],
+        'l1_ratio'   : [0.4, 0.5, 0.6, 0.7],
 }
 
-En = GridSearchCV(ElasticNet(), parameters)
-En.fit(x_, y_)
-print(f"training dataに対しての精度: {En.score(x_, y_):.2}")
+En2 = GridSearchCV(ElasticNet(), parameters)
+En2.fit(X_train, y_train)
 
+acc_ElasticNet_Gs = En2.score(X_train, y_train)
+acc_dic.update(model_ElasticNet_Gs = round(acc_ElasticNet_Gs,3))
+# print(f"training dataに対しての精度: {En.score(X_train, y_train):.2}")
+
+print('best_params : {}'.format(En2.best_params_))
 prediction = np.exp(En.predict(test_feature))
 
 #%%
@@ -126,8 +130,7 @@ dict_array = []
 for i in acc_dic.items():
         dict_array.append(acc_dic)
 Acc = pd.concat([Acc, pd.DataFrame.from_dict(dict_array)]).T
-Acc_table = Acc.drop(1, axis=1).rename(columns = {0:'Accuracy'})
-Acc_table
+Acc[0]
 
 #%%
 # Idを取得
