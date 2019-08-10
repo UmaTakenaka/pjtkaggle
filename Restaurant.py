@@ -12,7 +12,6 @@ from sklearn.ensemble import RandomForestRegressor
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split, cross_val_score
 
-#%%
 train = pd.read_csv("rest_train.csv")
 test = pd.read_csv("rest_test.csv")
 
@@ -51,9 +50,15 @@ alldata["Open Date"] = pd.to_datetime(alldata["Open Date"])
 alldata["Year"] = alldata["Open Date"].apply(lambda x:x.year)
 alldata["Month"] = alldata["Open Date"].apply(lambda x:x.month)
 alldata["Day"] = alldata["Open Date"].apply(lambda x:x.day)
+alldata["kijun"] = "2015-04-27"
+alldata["kijun"] = pd.to_datetime(alldata["kijun"])
+alldata["BusinessPeriod"] = (alldata["kijun"] - alldata["Open Date"]).apply(lambda x: x.days)
 
 alldata = alldata.drop('Open Date', axis=1)
+alldata = alldata.drop('kijun', axis=1)
 
+#%%
+alldata.head()
 
 #%%
 # 訓練データ特徴量をリスト化
@@ -73,6 +78,10 @@ all_data = pd.concat([alldata[other_cols],alldata[num_cols].fillna(0),cat],axis=
 
 # plt.hist(np.log(train['revenue']), bins=50)
 # plt.hist(train['revenue'], bins=50)
+
+#%%
+Datatype_table(all_data)
+
 
 #%%
 # lightGBMによる予測
