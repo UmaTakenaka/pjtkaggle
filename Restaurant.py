@@ -3,67 +3,84 @@ import pandas as pd
 import numpy as np
 # from sklearn.svm import SVC
 from sklearn.metrics import classification_report
+from sklearn import metrics
 # from sklearn.ensemble import RandomForestClassifier
 import matplotlib.pyplot as plt
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, ElasticNet
+from sklearn.ensemble import RandomForestRegressor
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split, cross_val_score
 
-train = pd.read_csv("hp_train.csv")
-test = pd.read_csv("hp_test.csv")
+#%%
+train = pd.read_csv("rest_train.csv")
+test = pd.read_csv("rest_test.csv")
 
-# train.describe()
 
 #%%
 # サンプルから欠損値と割合、データ型を調べる関数
 def Missing_table(df):
-    # null_val = df.isnull().sum()
-    null_val = df.isnull().sum()[train.isnull().sum()>0]
+    null_val = df.isnull().sum()
+    # null_val = df.isnull().sum()[train.isnull().sum()>0].sort_values(ascending=False)
     percent = 100 * null_val/len(df)
-    na_col_list = df.isnull().sum()[df.isnull().sum()>0].index.tolist() # 欠損を含むカラムをリスト化
-    list_type = df[na_col_list].dtypes.sort_values(ascending=False) #データ型
-    Missing_table = pd.concat([null_val, percent, list_type], axis = 1)
+    # list_type = df.isnull().sum().dtypes #データ型
+    Missing_table = pd.concat([null_val, percent], axis = 1)
     missing_table_len = Missing_table.rename(
     columns = {0:'欠損値', 1:'%', 2:'type'})
     return missing_table_len.sort_values(by=['欠損値'], ascending=False)
 
 Missing_table(train)
-# plt.hist(np.log(train['SalePrice']), bins=50)
+
+#%%
+# サンプルからデータ型を調べる関数
+def Datatype_table(df):
+        list_type = df.dtypes #データ型
+        Datatype_table = pd.concat([list_type], axis = 1)
+        Datatype_table_len = Datatype_table.rename(columns = {0:'データ型'})
+        return Datatype_table_len
+    
+Datatype_table(train)
 
 #%%
 train['WhatIsData'] = 'Train'
 test['WhatIsData'] = 'Test'
-test['SalePrice'] = 9999999999
+test['revenue'] = 9999999999
 alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
 
-alldata.head()
+alldata["Open Date"] = pd.to_datetime(alldata["Open Date"])
+alldata["Year"] = alldata["Open Date"].apply(lambda x:x.year)
+alldata["Month"] = alldata["Open Date"].apply(lambda x:x.month)
+alldata["Day"] = alldata["Open Date"].apply(lambda x:x.day)
+
+alldata = alldata.drop('Open Date', axis=1)
+
 
 #%%
 # 訓練データ特徴量をリスト化
-cat_cols = alldata.dtypes[train.dtypes=='object'].index.tolist()
-num_cols = alldata.dtypes[train.dtypes!='object'].index.tolist()
+cat_cols = alldata.dtypes[alldata.dtypes=='object'].index.tolist()
+num_cols = alldata.dtypes[alldata.dtypes!='object'].index.tolist()
 
 other_cols = ['Id','WhatIsData']
 # 余計な要素をリストから削除
 cat_cols.remove('WhatIsData') #学習データ・テストデータ区別フラグ除去
 num_cols.remove('Id') #Id削除
 
+# カテゴリカル変数をダミー化
 cat = pd.get_dummies(alldata[cat_cols])
 
 # データ統合
 all_data = pd.concat([alldata[other_cols],alldata[num_cols].fillna(0),cat],axis=1)
 
-# plt.hist(np.log(train['SalePrice']), bins=50)
-# plt.hist(train['SalePrice'], bins=50)
+# plt.hist(np.log(train['revenue']), bins=50)
+# plt.hist(train['revenue'], bins=50)
 
 #%%
 # lightGBMによる予測
 train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
 
-x_ = train_.drop('SalePrice',axis=1)
-y_ = train_.loc[:, ['SalePrice']]
+x_ = train_.drop('revenue',axis=1)
+y_ = train_.loc[:, ['revenue']]
 y_ = np.log(y_)
 test_feature = test_.drop('Id',axis=1)
 
@@ -90,7 +107,7 @@ params = {
 # train
 gbm = lgb.train(params,
             lgb_train,
-            num_boost_round=1000,
+            num_boost_round=100,
             valid_sets=lgb_eval,
             early_stopping_rounds=10)
 
@@ -98,26 +115,42 @@ prediction = np.exp(gbm.predict(test_feature))
 
 
 #%%
+# RandomForestRegressorによる予測
+train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
+
+x_ = train_.drop('revenue',axis=1)
+y_ = train_.loc[:, ['revenue']]
+y_ = np.log(y_)
+
+forest = RandomForestRegressor().fit(x_, y_)
+print(f"training dataに対しての精度: {forest.score(x_, y_):.2}")
+
+test_feature = test_.drop('Id',axis=1)
+prediction = np.exp(forest.predict(test_feature))
+
+#%%
 # lasso回帰による予測
 train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
 
-x_ = train_.drop('SalePrice',axis=1)
-y_ = train_.loc[:, ['SalePrice']]
+x_ = train_.drop('revenue',axis=1)
+y_ = train_.loc[:, ['revenue']]
+# y_ = np.log(y_)
 
 lasso = Lasso().fit(x_, y_)
 print(f"training dataに対しての精度: {lasso.score(x_, y_):.2}")
 
 test_feature = test_.drop('Id',axis=1)
-prediction = lasso.predict(test_feature)
+prediction = np.exp(lasso.predict(test_feature))
 
 #%%
 # ElasticNetによる予測
 train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
 
-x_ = train_.drop('SalePrice',axis=1)
-y_ = train_.loc[:, ['SalePrice']]
+x_ = train_.drop('revenue',axis=1)
+y_ = train_.loc[:, ['revenue']]
 y_ = np.log(y_)
 
 En = ElasticNet().fit(x_, y_)
@@ -129,10 +162,10 @@ prediction = np.exp(En.predict(test_feature))
 #%%
 # ElasticNetによるパラメータチューニング
 train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','SalePrice'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
 
-x_ = train_.drop('SalePrice',axis=1)
-y_ = train_.loc[:, ['SalePrice']]
+x_ = train_.drop('revenue',axis=1)
+y_ = train_.loc[:, ['revenue']]
 y_ = np.log(y_)
 
 parameters = {
@@ -152,8 +185,8 @@ prediction = np.exp(En.predict(test_feature))
 # Idを取得
 Id = np.array(test["Id"]).astype(int)
 # my_prediction(予測データ）とPassengerIdをデータフレームへ落とし込む
-result = pd.DataFrame(prediction, Id, columns = ["SalePrice"])
+result = pd.DataFrame(prediction, Id, columns = ["Prediction"])
 # my_tree_one.csvとして書き出し
-result.to_csv("prediction_regression.csv", index_label = ["Id"])
+result.to_csv("prediction_Restaurant.csv", index_label = ["Id"])
 
 #%%
