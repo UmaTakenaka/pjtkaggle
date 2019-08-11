@@ -63,8 +63,7 @@ y_ = np.log(y_)
 test_feature = test_.drop('Id',axis=1)
 
 X_train, X_test, y_train, y_test = train_test_split(
-    x_, y_, test_size=0.30, random_state=201612
-)
+    x_, y_, random_state=0, train_size=0.7)
 
 #%%
 # サンプルから欠損値と割合、データ型を調べる関数
@@ -106,15 +105,26 @@ params = {
         'feature_fraction' : 0.9,
         'bagging_fraction' : 0.8,
         'bagging_freq': 5,
-        'verbose' : 0
+        'verbose' : 0,
+        'n_jobs': 2
 }
 
-# train
 gbm = lgb.train(params,
             lgb_train,
             num_boost_round=100,
             valid_sets=lgb_eval,
             early_stopping_rounds=10)
+
+# cv_results = lgb.cv(params,
+#                 lgb_train,
+#                 num_boost_round=100,
+#                 early_stopping_rounds=10,
+#                 nfold=5,
+#                 shuffle=True,
+#                 stratified=False,
+#                 seed=42)
+
+# np.mean(cv_results["l2-mean"])
 
 # prediction_train = gbm.predict(X_train)
 
@@ -127,7 +137,8 @@ gbm = lgb.train(params,
 # acc_lightGBM =  mean_squared_error(y_true, np.exp(y_pred))
 # acc_dic.update(model_lightGBM = round(acc_lightGBM,3))
 
-prediction_lgb = np.exp(gbm.predict(test_feature))
+# prediction_lgb = np.exp(gbm.predict(test_feature))
+
 
 #%%
 # RandomForestRegressorによる予測
@@ -184,8 +195,11 @@ Acc[0]
 #%%
 # Idを取得
 Id = np.array(test["Id"]).astype(int)
-# my_prediction(予測データ）とPassengerIdをデータフレームへ落とし込む
-result = pd.DataFrame(prediction_rf, Id, columns = ["Prediction"])
-# my_tree_one.csvとして書き出し
+# 予測データとIdをデータフレームへ落とし込む
+result = pd.DataFrame(prediction_lgb, Id, columns = ["Prediction"])
+# csvとして書き出し
 result.to_csv("prediction_Restaurant.csv", index_label = ["Id"])
 
+
+
+#%%
