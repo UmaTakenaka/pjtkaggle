@@ -12,6 +12,8 @@ from sklearn.ensemble import RandomForestRegressor
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
+import seaborn as sb
+
 
 #%%
 #データを読み込んでマージする
@@ -35,6 +37,11 @@ alldata["BusinessPeriod"] = (alldata["kijun"] - alldata["Open Date"]).apply(lamb
 
 alldata = alldata.drop('Open Date', axis=1)
 alldata = alldata.drop('kijun', axis=1)
+
+#%%
+sb.relplot(x="Open Date", y="revenue", col="City Group", data=train)
+
+#%%
 
 # 訓練データ特徴量をリスト化
 cat_cols = alldata.dtypes[alldata.dtypes=='object'].index.tolist()
