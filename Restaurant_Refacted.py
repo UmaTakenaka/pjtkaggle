@@ -63,7 +63,7 @@ y_ = np.log(y_)
 test_feature = test_.drop('Id',axis=1)
 
 X_train, X_test, y_train, y_test = train_test_split(
-    x_, y_, random_state=0, train_size=0.7)
+    x_, y_, random_state=0, train_size=0.9,shuffle=True)
 
 #%%
 # サンプルから欠損値と割合、データ型を調べる関数
@@ -137,7 +137,7 @@ gbm = lgb.train(params,
 # acc_lightGBM =  mean_squared_error(y_true, np.exp(y_pred))
 # acc_dic.update(model_lightGBM = round(acc_lightGBM,3))
 
-# prediction_lgb = np.exp(gbm.predict(test_feature))
+prediction_lgb = np.exp(gbm.predict(test_feature))
 
 
 #%%
@@ -199,7 +199,5 @@ Id = np.array(test["Id"]).astype(int)
 result = pd.DataFrame(prediction_lgb, Id, columns = ["Prediction"])
 # csvとして書き出し
 result.to_csv("prediction_Restaurant.csv", index_label = ["Id"])
-
-
 
 #%%
