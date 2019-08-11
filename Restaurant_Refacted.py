@@ -36,22 +36,6 @@ alldata["BusinessPeriod"] = (alldata["kijun"] - alldata["Open Date"]).apply(lamb
 alldata = alldata.drop('Open Date', axis=1)
 alldata = alldata.drop('kijun', axis=1)
 
-train['WhatIsData'] = 'Train'
-test['WhatIsData'] = 'Test'
-test['revenue'] = 9999999999
-alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
-
-alldata["Open Date"] = pd.to_datetime(alldata["Open Date"])
-alldata["Year"] = alldata["Open Date"].apply(lambda x:x.year)
-alldata["Month"] = alldata["Open Date"].apply(lambda x:x.month)
-alldata["Day"] = alldata["Open Date"].apply(lambda x:x.day)
-alldata["kijun"] = "2015-04-27"
-alldata["kijun"] = pd.to_datetime(alldata["kijun"])
-alldata["BusinessPeriod"] = (alldata["kijun"] - alldata["Open Date"]).apply(lambda x: x.days)
-
-alldata = alldata.drop('Open Date', axis=1)
-alldata = alldata.drop('kijun', axis=1)
-
 # 訓練データ特徴量をリスト化
 cat_cols = alldata.dtypes[alldata.dtypes=='object'].index.tolist()
 num_cols = alldata.dtypes[alldata.dtypes!='object'].index.tolist()
@@ -110,6 +94,7 @@ Datatype_table(train)
 # lightGBMによる予測
 lgb_train = lgb.Dataset(X_train, y_train)
 lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+
 # LightGBM parameters
 params = {
         'task' : 'train',
@@ -131,41 +116,41 @@ gbm = lgb.train(params,
             valid_sets=lgb_eval,
             early_stopping_rounds=10)
 
-prediction_train = gbm.predict(X_train)
+# prediction_train = gbm.predict(X_train)
 
-y_pred = []
-for x in prediction_train:
-        y_pred.append(x)
+# y_pred = []
+# for x in prediction_train:
+#         y_pred.append(x)
 
-y_true = y_train['revenue'].tolist()
+# y_true = y_train['revenue'].tolist()
 
-acc_lightGBM =  mean_squared_error(y_true, np.exp(y_pred))
-acc_dic.update(model_lightGBM = round(acc_lightGBM,3))
+# acc_lightGBM =  mean_squared_error(y_true, np.exp(y_pred))
+# acc_dic.update(model_lightGBM = round(acc_lightGBM,3))
 
 prediction_lgb = np.exp(gbm.predict(test_feature))
 
 #%%
 # RandomForestRegressorによる予測
-forest = RandomForestRegressor().fit(x_, y_)
-prediction = np.exp(forest.predict(test_feature))
+forest = RandomForestRegressor().fit(X_train, y_train)
+prediction_rf = np.exp(forest.predict(test_feature))
 
 acc_forest = forest.score(X_train, y_train)
 acc_dic.update(model_forest = round(acc_forest,3))
-print(f"training dataに対しての精度: {forest.score(x_, y_):.2}")
+print(f"training dataに対しての精度: {forest.score(X_train, y_train):.2}")
 
 #%%
 # lasso回帰による予測
-lasso = Lasso().fit(x_, y_)
-prediction = np.exp(lasso.predict(test_feature))
+lasso = Lasso().fit(X_train, y_train)
+prediction_lasso = np.exp(lasso.predict(test_feature))
 
 acc_lasso = lasso.score(X_train, y_train)
 acc_dic.update(model_lasso = round(acc_lasso,3))
-print(f"training dataに対しての精度: {lasso.score(x_, y_):.2}")
+print(f"training dataに対しての精度: {lasso.score(X_train, y_train):.2}")
 
 #%%
 # ElasticNetによる予測
-En = ElasticNet().fit(x_, y_)
-prediction = np.exp(En.predict(test_feature))
+En = ElasticNet().fit(X_train, y_train)
+prediction_en = np.exp(En.predict(test_feature))
 print(f"training dataに対しての精度: {En.score(X_train, y_train):.2}")
 
 acc_ElasticNet = En.score(X_train, y_train)
@@ -179,12 +164,12 @@ parameters = {
 }
 
 En2 = GridSearchCV(ElasticNet(), parameters)
-En2.fit(x_, y_)
-prediction = np.exp(En.predict(test_feature))
+En2.fit(X_train, y_train)
+prediction_en2 = np.exp(En.predict(test_feature))
 
 acc_ElasticNet_Gs = En2.score(X_train, y_train)
 acc_dic.update(model_ElasticNet_Gs = round(acc_ElasticNet_Gs,3))
-# print(f"training dataに対しての精度: {En.score(x_, y_):.2}")
+print(f"training dataに対しての精度: {En.score(X_train, y_train):.2}")
 
 
 #%%
@@ -200,11 +185,7 @@ Acc[0]
 # Idを取得
 Id = np.array(test["Id"]).astype(int)
 # my_prediction(予測データ）とPassengerIdをデータフレームへ落とし込む
-result = pd.DataFrame(prediction, Id, columns = ["Prediction"])
+result = pd.DataFrame(prediction_rf, Id, columns = ["Prediction"])
 # my_tree_one.csvとして書き出し
 result.to_csv("prediction_Restaurant.csv", index_label = ["Id"])
 
-#%%
-y_pred
-
-#%%
