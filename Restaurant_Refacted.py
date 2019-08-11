@@ -11,10 +11,76 @@ from sklearn.linear_model import Lasso, ElasticNet
 from sklearn.ensemble import RandomForestRegressor
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 
+#%%
+#データを読み込んでマージする
 train = pd.read_csv("rest_train.csv")
 test = pd.read_csv("rest_test.csv")
 
+acc_dic = {}
+
+train['WhatIsData'] = 'Train'
+test['WhatIsData'] = 'Test'
+test['revenue'] = 9999999999
+alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
+
+alldata["Open Date"] = pd.to_datetime(alldata["Open Date"])
+alldata["Year"] = alldata["Open Date"].apply(lambda x:x.year)
+alldata["Month"] = alldata["Open Date"].apply(lambda x:x.month)
+alldata["Day"] = alldata["Open Date"].apply(lambda x:x.day)
+alldata["kijun"] = "2015-04-27"
+alldata["kijun"] = pd.to_datetime(alldata["kijun"])
+alldata["BusinessPeriod"] = (alldata["kijun"] - alldata["Open Date"]).apply(lambda x: x.days)
+
+alldata = alldata.drop('Open Date', axis=1)
+alldata = alldata.drop('kijun', axis=1)
+
+train['WhatIsData'] = 'Train'
+test['WhatIsData'] = 'Test'
+test['revenue'] = 9999999999
+alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
+
+alldata["Open Date"] = pd.to_datetime(alldata["Open Date"])
+alldata["Year"] = alldata["Open Date"].apply(lambda x:x.year)
+alldata["Month"] = alldata["Open Date"].apply(lambda x:x.month)
+alldata["Day"] = alldata["Open Date"].apply(lambda x:x.day)
+alldata["kijun"] = "2015-04-27"
+alldata["kijun"] = pd.to_datetime(alldata["kijun"])
+alldata["BusinessPeriod"] = (alldata["kijun"] - alldata["Open Date"]).apply(lambda x: x.days)
+
+alldata = alldata.drop('Open Date', axis=1)
+alldata = alldata.drop('kijun', axis=1)
+
+# 訓練データ特徴量をリスト化
+cat_cols = alldata.dtypes[alldata.dtypes=='object'].index.tolist()
+num_cols = alldata.dtypes[alldata.dtypes!='object'].index.tolist()
+
+other_cols = ['Id','WhatIsData']
+# 余計な要素をリストから削除
+cat_cols.remove('WhatIsData') #学習データ・テストデータ区別フラグ除去
+num_cols.remove('Id') #Id削除
+
+# カテゴリカル変数をダミー化
+cat = pd.get_dummies(alldata[cat_cols])
+
+# データ統合
+all_data = pd.concat([alldata[other_cols],alldata[num_cols].fillna(0),cat],axis=1)
+
+# plt.hist(np.log(train['revenue']), bins=50)
+# plt.hist(train['revenue'], bins=50)
+
+train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
+
+x_ = train_.drop('revenue',axis=1)
+y_ = train_.loc[:, ['revenue']]
+y_ = np.log(y_)
+test_feature = test_.drop('Id',axis=1)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    x_, y_, test_size=0.30, random_state=201612
+)
 
 #%%
 # サンプルから欠損値と割合、データ型を調べる関数
@@ -41,62 +107,7 @@ def Datatype_table(df):
 Datatype_table(train)
 
 #%%
-train['WhatIsData'] = 'Train'
-test['WhatIsData'] = 'Test'
-test['revenue'] = 9999999999
-alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
-
-alldata["Open Date"] = pd.to_datetime(alldata["Open Date"])
-alldata["Year"] = alldata["Open Date"].apply(lambda x:x.year)
-alldata["Month"] = alldata["Open Date"].apply(lambda x:x.month)
-alldata["Day"] = alldata["Open Date"].apply(lambda x:x.day)
-alldata["kijun"] = "2015-04-27"
-alldata["kijun"] = pd.to_datetime(alldata["kijun"])
-alldata["BusinessPeriod"] = (alldata["kijun"] - alldata["Open Date"]).apply(lambda x: x.days)
-
-alldata = alldata.drop('Open Date', axis=1)
-alldata = alldata.drop('kijun', axis=1)
-
-#%%
-alldata.head()
-
-#%%
-# 訓練データ特徴量をリスト化
-cat_cols = alldata.dtypes[alldata.dtypes=='object'].index.tolist()
-num_cols = alldata.dtypes[alldata.dtypes!='object'].index.tolist()
-
-other_cols = ['Id','WhatIsData']
-# 余計な要素をリストから削除
-cat_cols.remove('WhatIsData') #学習データ・テストデータ区別フラグ除去
-num_cols.remove('Id') #Id削除
-
-# カテゴリカル変数をダミー化
-cat = pd.get_dummies(alldata[cat_cols])
-
-# データ統合
-all_data = pd.concat([alldata[other_cols],alldata[num_cols].fillna(0),cat],axis=1)
-
-# plt.hist(np.log(train['revenue']), bins=50)
-# plt.hist(train['revenue'], bins=50)
-
-#%%
-Datatype_table(all_data)
-
-
-#%%
 # lightGBMによる予測
-train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
-
-x_ = train_.drop('revenue',axis=1)
-y_ = train_.loc[:, ['revenue']]
-y_ = np.log(y_)
-test_feature = test_.drop('Id',axis=1)
-
-X_train, X_test, y_train, y_test = train_test_split(
-    x_, y_, test_size=0.33, random_state=201612
-)
-
 lgb_train = lgb.Dataset(X_train, y_train)
 lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
 # LightGBM parameters
@@ -120,75 +131,70 @@ gbm = lgb.train(params,
             valid_sets=lgb_eval,
             early_stopping_rounds=10)
 
-prediction = np.exp(gbm.predict(test_feature))
+prediction_train = gbm.predict(X_train)
 
+y_pred = []
+for x in prediction_train:
+        y_pred.append(x)
+
+y_true = y_train['revenue'].tolist()
+
+acc_lightGBM =  mean_squared_error(y_true, np.exp(y_pred))
+acc_dic.update(model_lightGBM = round(acc_lightGBM,3))
+
+prediction_lgb = np.exp(gbm.predict(test_feature))
 
 #%%
 # RandomForestRegressorによる予測
-train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
-
-x_ = train_.drop('revenue',axis=1)
-y_ = train_.loc[:, ['revenue']]
-y_ = np.log(y_)
-
 forest = RandomForestRegressor().fit(x_, y_)
-print(f"training dataに対しての精度: {forest.score(x_, y_):.2}")
-
-test_feature = test_.drop('Id',axis=1)
 prediction = np.exp(forest.predict(test_feature))
+
+acc_forest = forest.score(X_train, y_train)
+acc_dic.update(model_forest = round(acc_forest,3))
+print(f"training dataに対しての精度: {forest.score(x_, y_):.2}")
 
 #%%
 # lasso回帰による予測
-train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
-
-x_ = train_.drop('revenue',axis=1)
-y_ = train_.loc[:, ['revenue']]
-# y_ = np.log(y_)
-
 lasso = Lasso().fit(x_, y_)
-print(f"training dataに対しての精度: {lasso.score(x_, y_):.2}")
-
-test_feature = test_.drop('Id',axis=1)
 prediction = np.exp(lasso.predict(test_feature))
+
+acc_lasso = lasso.score(X_train, y_train)
+acc_dic.update(model_lasso = round(acc_lasso,3))
+print(f"training dataに対しての精度: {lasso.score(x_, y_):.2}")
 
 #%%
 # ElasticNetによる予測
-train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
-
-x_ = train_.drop('revenue',axis=1)
-y_ = train_.loc[:, ['revenue']]
-y_ = np.log(y_)
-
 En = ElasticNet().fit(x_, y_)
-print(f"training dataに対しての精度: {En.score(x_, y_):.2}")
-
-test_feature = test_.drop('Id',axis=1)
 prediction = np.exp(En.predict(test_feature))
+print(f"training dataに対しての精度: {En.score(X_train, y_train):.2}")
+
+acc_ElasticNet = En.score(X_train, y_train)
+acc_dic.update(model_ElasticNet = round(acc_ElasticNet,3))
 
 #%%
 # ElasticNetによるパラメータチューニング
-train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
-
-x_ = train_.drop('revenue',axis=1)
-y_ = train_.loc[:, ['revenue']]
-y_ = np.log(y_)
-
 parameters = {
         'alpha'      : [0.001, 0.01, 0.1, 1, 10, 100],
         'l1_ratio'   : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
 }
 
-En = GridSearchCV(ElasticNet(), parameters)
-En.fit(x_, y_)
-print(f"training dataに対しての精度: {En.score(x_, y_):.2}")
-
-test_feature = test_.drop('Id',axis=1)
+En2 = GridSearchCV(ElasticNet(), parameters)
+En2.fit(x_, y_)
 prediction = np.exp(En.predict(test_feature))
 
+acc_ElasticNet_Gs = En2.score(X_train, y_train)
+acc_dic.update(model_ElasticNet_Gs = round(acc_ElasticNet_Gs,3))
+# print(f"training dataに対しての精度: {En.score(x_, y_):.2}")
+
+
+#%%
+# 各モデルの訓練データに対する精度をDataFrame化
+Acc = pd.DataFrame([], columns=acc_dic.keys())
+dict_array = []
+for i in acc_dic.items():
+        dict_array.append(acc_dic)
+Acc = pd.concat([Acc, pd.DataFrame.from_dict(dict_array)]).T
+Acc[0]
 
 #%%
 # Idを取得
@@ -197,5 +203,8 @@ Id = np.array(test["Id"]).astype(int)
 result = pd.DataFrame(prediction, Id, columns = ["Prediction"])
 # my_tree_one.csvとして書き出し
 result.to_csv("prediction_Restaurant.csv", index_label = ["Id"])
+
+#%%
+y_pred
 
 #%%
