@@ -20,6 +20,8 @@ import seaborn as sb
 train = pd.read_csv("rest_train.csv")
 test = pd.read_csv("rest_test.csv")
 
+#%%
+
 acc_dic = {}
 
 train['WhatIsData'] = 'Train'
@@ -70,7 +72,7 @@ y_ = np.log(y_)
 test_feature = test_.drop('Id',axis=1)
 
 X_train, X_test, y_train, y_test = train_test_split(
-    x_, y_, random_state=0, train_size=0.9,shuffle=True)
+    x_, y_, random_state=0, train_size=0.7,shuffle=True)
 
 #%%
 # サンプルから欠損値と割合、データ型を調べる関数
@@ -95,6 +97,9 @@ def Datatype_table(df):
         return Datatype_table_len
     
 Datatype_table(train)
+
+#%%
+test.describe()
 
 #%%
 # lightGBMによる予測
