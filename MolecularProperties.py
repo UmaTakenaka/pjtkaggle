@@ -30,7 +30,9 @@ alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
 
 #%%
 train_below = train[train['scalar_coupling_constant'] < 50]
-plt.hist(train_below['scalar_coupling_constant'], bins=100)
+# plt.hist(train_below['scalar_coupling_constant'], bins=100)
+train_upper = train[train['scalar_coupling_constant'] >= 50]
+plt.hist(train_upper['scalar_coupling_constant'], bins=100)
 
 #%%
 df = pd.DataFrame(train["molecule_name"].unique())
