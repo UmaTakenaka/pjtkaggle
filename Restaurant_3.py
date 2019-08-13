@@ -20,6 +20,14 @@ import seaborn as sb
 train = pd.read_csv("rest_train.csv")
 test = pd.read_csv("rest_test.csv")
 
+
+#%%
+City_data = pd.read_csv("CityList_input.csv")
+City_data = City_data.drop('ID', axis=1)
+CityData = City_data.rename(columns = {'City_name':'City'})
+CityData
+
+
 #%%
 
 acc_dic = {}
@@ -36,9 +44,12 @@ alldata["Day"] = alldata["Open Date"].apply(lambda x:x.day)
 alldata["kijun"] = "2015-04-27"
 alldata["kijun"] = pd.to_datetime(alldata["kijun"])
 alldata["BusinessPeriod"] = (alldata["kijun"] - alldata["Open Date"]).apply(lambda x: x.days)
+alldata = pd.merge(alldata, CityData, how="left", on="City")
 
 alldata = alldata.drop('Open Date', axis=1)
 alldata = alldata.drop('kijun', axis=1)
+alldata = alldata.drop('City', axis=1)
+alldata = alldata.drop('City Group', axis=1)
 
 #%%
 sb.relplot(x="Open Date", y="revenue", col="City Group", data=train)
@@ -72,7 +83,7 @@ y_ = np.log(y_)
 test_feature = test_.drop('Id',axis=1)
 
 X_train, X_test, y_train, y_test = train_test_split(
-    x_, y_, random_state=0, train_size=0.7,shuffle=True)
+    x_, y_, random_state=0, train_size=0.9,shuffle=True)
 
 #%%
 # サンプルから欠損値と割合、データ型を調べる関数
@@ -96,7 +107,7 @@ def Datatype_table(df):
         Datatype_table_len = Datatype_table.rename(columns = {0:'データ型'})
         return Datatype_table_len
     
-Datatype_table(alldata)
+Datatype_table(City_data)
 
 #%%
 test.describe()
