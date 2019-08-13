@@ -49,7 +49,8 @@ alldata = pd.merge(alldata, CityData, how="left", on="City")
 alldata = alldata.drop('Open Date', axis=1)
 alldata = alldata.drop('kijun', axis=1)
 alldata = alldata.drop('City', axis=1)
-alldata = alldata.drop('City Group', axis=1)
+alldata = alldata.drop('Area', axis=1)
+alldata = alldata.drop('Density', axis=1)
 
 #%%
 sb.relplot(x="Open Date", y="revenue", col="City Group", data=train)
