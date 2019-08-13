@@ -17,8 +17,29 @@ import seaborn as sb
 
 #%%
 #データを読み込んでマージする
-train = pd.read_csv("rest_train.csv")
-test = pd.read_csv("rest_test.csv")
+train = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train.csv")
+test = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train.csv")
+sample_submission = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/sample_submission.csv")
+structures = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/structures.csv")
+
+#%%
+train['WhatIsData'] = 'Train'
+test['WhatIsData'] = 'Test'
+test['scalar_coupling_constant'] = 9999999999
+alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
+
+#%%
+train_below = train[train['scalar_coupling_constant'] < 50]
+plt.hist(train_below['scalar_coupling_constant'], bins=100)
+
+#%%
+test.head()
+
+#%%
+# train.describe()
+# test.describe()
+# structures.describe()
+plt.hist(train['scalar_coupling_constant'], bins=100)
 
 
 #%%
@@ -98,7 +119,7 @@ def Missing_table(df):
     columns = {0:'欠損値', 1:'%', 2:'type'})
     return missing_table_len.sort_values(by=['欠損値'], ascending=False)
 
-Missing_table(train)
+Missing_table(test)
 
 #%%
 # サンプルからデータ型を調べる関数
@@ -108,7 +129,7 @@ def Datatype_table(df):
         Datatype_table_len = Datatype_table.rename(columns = {0:'データ型'})
         return Datatype_table_len
     
-Datatype_table(City_data)
+Datatype_table(train)
 
 #%%
 test.describe()
