@@ -19,7 +19,7 @@ import seaborn as sb
 #データを読み込んでマージする
 train = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train.csv")
 test = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train.csv")
-sample_submission = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/sample_submission.csv")
+# sample_submission = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/sample_submission.csv")
 structures = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/structures.csv")
 
 #%%
@@ -33,7 +33,13 @@ train_below = train[train['scalar_coupling_constant'] < 50]
 plt.hist(train_below['scalar_coupling_constant'], bins=100)
 
 #%%
-test.head()
+df = pd.DataFrame(train["molecule_name"].unique())
+df
+
+#%%
+train_sample = train.sample(n=10000)
+# sb.relplot(x="molecule_name", y="scalar_coupling_constant", data=train_sample)
+plt.scatter(train_sample["molecule_name"], train_sample["calar_coupling_constant"])
 
 #%%
 # train.describe()
