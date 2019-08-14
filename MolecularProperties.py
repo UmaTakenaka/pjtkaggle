@@ -18,29 +18,58 @@ import seaborn as sb
 #%%
 #データを読み込む
 train = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/train.csv")
-test = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/train.csv")
+test = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/test.csv")
 # sample_submission = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/sample_submission.csv")
 structures = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/structures.csv")
 
-# 計算用にサンプルデータを作る
-train_sample = train.sample(n=10000)
 
 #%%
+# 分子名+atom_index_0/1で原子の種類と2つの原子の座標を得る
+def map_atom_info(df, atom_idx):
+    df = pd.merge(df, structures, how = 'left',
+                  left_on  = ['molecule_name', f'atom_index_{atom_idx}'],
+                  right_on = ['molecule_name',  'atom_index'])
+    
+    df = df.drop('atom_index', axis=1)
+    df = df.rename(columns={'atom': f'atom_{atom_idx}',
+                            'x': f'x_{atom_idx}',
+                            'y': f'y_{atom_idx}',
+                            'z': f'z_{atom_idx}'})
+    return df
+
+train = map_atom_info(train, 0)
+train = map_atom_info(train, 1)
+
+test = map_atom_info(test, 0)
+test = map_atom_info(test, 1)
+
 #%%
-#データを読み込む
-dipole_moments = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/dipole_moments.csv")
-magnetic_shielding_tensors = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/magnetic_shielding_tensors.csv")
-mulliken_charges = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/mulliken_charges.csv")
-potential_energy = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/potential_energy.csv")
+# 各分子の原子間距離を測る
+train_p_0 = train[['x_0', 'y_0', 'z_0']].values
+train_p_1 = train[['x_1', 'y_1', 'z_1']].values
+test_p_0 = test[['x_0', 'y_0', 'z_0']].values
+test_p_1 = test[['x_1', 'y_1', 'z_1']].values
+
+train['dist_speedup'] = np.linalg.norm(train_p_0 - train_p_1, axis=1)
+test['dist_speedup'] = np.linalg.norm(test_p_0 - test_p_1, axis=1)
+
+#%%
+# 中間ファイルとして書き出す
+train.to_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/train_processed.csv")
+test.to_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/test_processed.csv")
+
+#%%
+# 計算用にサンプルデータを作る
+train_sample = train.sample(n=100000)
 
 #%%
 # データをマージ
 acc_dic = {}
 
-train_sample['WhatIsData'] = 'Train'
+train['WhatIsData'] = 'Train'
 test['WhatIsData'] = 'Test'
 test['scalar_coupling_constant'] = 9999999999
-alldata = pd.concat([train_sample,test],axis=0).reset_index(drop=True)
+alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
 
 #%%
 alldata["type"][alldata["type"] == "1JHC" ] = 0
@@ -51,12 +80,21 @@ alldata["type"][alldata["type"] == "2JHC" ] = 4
 alldata["type"][alldata["type"] == "3JHH"] = 5
 alldata["type"][alldata["type"] == "3JHC" ] = 6
 alldata["type"][alldata["type"] == "3JHN"] = 7
-# alldata["type"] = alldata["type"].astype(int)
+
+alldata["atom_0"][alldata["atom_0"] == "H" ] = 1
+alldata["atom_1"][alldata["atom_1"] == "H" ] = 1
+alldata["atom_1"][alldata["atom_1"] == "C" ] = 6
+alldata["atom_1"][alldata["atom_1"] == "N" ] = 7
 
 alldata["molecule_name"] = alldata["molecule_name"].str[-6:].astype(int)
 
 #%%
-alldata["molecule_name"].mean()
+alldata["type"].astype(int)
+alldata["atom_0"].astype(int)
+alldata["atom_1"].astype(int)
+
+#%%
+alldata.describe()
 
 #%%
 train_sample_feature = train_sample.drop(["id"], axis=1)
@@ -104,6 +142,9 @@ train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','id'], axi
 test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','scalar_coupling_constant'], axis=1).reset_index(drop=True)
 
 #%%
+train.describe()
+
+#%%
 x_ = train_.drop('scalar_coupling_constant',axis=1)
 y_ = train_.loc[:, ['scalar_coupling_constant']]
 test_feature = test_.drop('id',axis=1)
@@ -133,7 +174,7 @@ def Datatype_table(df):
         Datatype_table_len = Datatype_table.rename(columns = {0:'データ型'})
         return Datatype_table_len
     
-Datatype_table(test_)
+Datatype_table(alldata)
 
 #%%
 test.describe()
@@ -160,7 +201,7 @@ params = {
 
 gbm = lgb.train(params,
             lgb_train,
-            num_boost_round=100,
+            num_boost_round=500,
             valid_sets=lgb_eval,
             early_stopping_rounds=10)
 
@@ -186,23 +227,21 @@ gbm = lgb.train(params,
 # acc_lightGBM =  mean_squared_error(y_true, np.exp(y_pred))
 # acc_dic.update(model_lightGBM = round(acc_lightGBM,3))
 
-prediction_lgb = np.exp(gbm.predict(test_feature))
+prediction_lgb = gbm.predict(test_feature)
 
 
 #%%
 # RandomForestRegressorによる予測
-forest_parameters = {'n_estimators': [500, 700, 1000],
-                'max_depth': [None, 1, 2, 3],
-                'min_samples_split': [1, 2, 3]}
+forest_parameters = {'n_estimators': [3, 10, 100, 500, 1000]}
 
 # clf = ensemble.RandomForestRegressor(n_estimators=500, n_jobs=1, verbose=1)
-clf = GridSearchCV(RandomForestRegressor(), forest_parameters, cv=5, scoring=r2_score, n_jobs=-1, verbose=1)
+clf = GridSearchCV(RandomForestRegressor(), forest_parameters, cv=5, n_jobs=-1, verbose=1)
 clf.fit(X_train, y_train)
 
 acc_forest = clf.score(X_train, y_train)
 acc_dic.update(model_forest = round(acc_forest,3))
 print(f"training dataに対しての精度: {clf.score(X_train, y_train):.2}")
-prediction_en = clf.predict(test_feature)
+prediction_rf_gs = clf.predict(test_feature)
 
 #%%
 # RandomForestRegressorによる予測
@@ -240,11 +279,11 @@ parameters = {
 
 En2 = GridSearchCV(ElasticNet(), parameters)
 En2.fit(X_train, y_train)
-prediction_en2 = np.exp(En.predict(test_feature))
+prediction_en2 = np.exp(En2.predict(test_feature))
 
 acc_ElasticNet_Gs = En2.score(X_train, y_train)
 acc_dic.update(model_ElasticNet_Gs = round(acc_ElasticNet_Gs,3))
-print(f"training dataに対しての精度: {En.score(X_train, y_train):.2}")
+print(f"training dataに対しての精度: {En2.score(X_train, y_train):.2}")
 
 
 #%%
@@ -258,11 +297,11 @@ Acc[0]
 
 #%%
 # Idを取得
-Id = np.array(test["Id"]).astype(int)
+Id = np.array(test["id"]).astype(int)
 # 予測データとIdをデータフレームへ落とし込む
-result = pd.DataFrame(prediction_lgb, Id, columns = ["Prediction"])
+result = pd.DataFrame(prediction_rf, Id, columns = ["scalar_coupling_constant"])
 # csvとして書き出し
-result.to_csv("prediction_Restaurant.csv", index_label = ["Id"])
+result.to_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/prediction_Molecule.csv", index_label = ["Id"])
 
 #%%
 City_unique = alldata["City"].unique()
@@ -274,3 +313,9 @@ df_city.to_csv("CityList.csv", index_label = ["City_name"])
 test_["molecule_name"].describe()
 
 #%%
+#%%
+#データを読み込む
+dipole_moments = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/dipole_moments.csv")
+magnetic_shielding_tensors = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/magnetic_shielding_tensors.csv")
+mulliken_charges = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/mulliken_charges.csv")
+potential_energy = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/potential_energy.csv")
