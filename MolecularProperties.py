@@ -55,6 +55,8 @@ alldata["type"][alldata["type"] == "3JHN"] = 7
 
 alldata["molecule_name"] = alldata["molecule_name"].str[-6:].astype(int)
 
+#%%
+alldata["molecule_name"].describe()
 
 #%%
 train_sample_feature = train_sample.drop(["id"], axis=1)
