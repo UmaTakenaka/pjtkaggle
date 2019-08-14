@@ -16,32 +16,60 @@ import seaborn as sb
 
 
 #%%
-#データを読み込んでマージする
-train = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train.csv")
-test = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train.csv")
+#データを読み込む
+train = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/train.csv")
+test = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/train.csv")
 # sample_submission = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/sample_submission.csv")
-structures = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/structures.csv")
+structures = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/structures.csv")
 
 #%%
-train['WhatIsData'] = 'Train'
+#%%
+#データを読み込む
+dipole_moments = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/dipole_moments.csv")
+magnetic_shielding_tensors = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/magnetic_shielding_tensors.csv")
+mulliken_charges = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/mulliken_charges.csv")
+potential_energy = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/potential_energy.csv")
+
+#%%
+# 計算用にサンプルデータを作る
+train_sample = train.sample(n=10000)
+
+#%%
+# データをマージ
+acc_dic = {}
+
+train_sample['WhatIsData'] = 'Train'
 test['WhatIsData'] = 'Test'
 test['scalar_coupling_constant'] = 9999999999
 alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
 
 #%%
-train_below = train[train['scalar_coupling_constant'] < 50]
-# plt.hist(train_below['scalar_coupling_constant'], bins=100)
-train_upper = train[train['scalar_coupling_constant'] >= 50]
-plt.hist(train_upper['scalar_coupling_constant'], bins=100)
+alldata["type"][alldata["type"] == "1JHC" ] = 0
+alldata["type"][alldata["type"] == "2JHH" ] = 1
+alldata["type"][alldata["type"] == "1JHN"] = 2
+alldata["type"][alldata["type"] == "2JHN" ] = 3
+alldata["type"][alldata["type"] == "2JHC" ] = 4
+alldata["type"][alldata["type"] == "3JHH"] = 5
+alldata["type"][alldata["type"] == "3JHC" ] = 6
+alldata["type"][alldata["type"] == "3JHN"] = 7
+
+alldata["molecule_name"] = alldata["molecule_name"].str[-6:].astype(int)
+
 
 #%%
-df = pd.DataFrame(train["molecule_name"].unique())
+train_sample_feature = train_sample.drop(["id"], axis=1)
+plt.figure(figsize=(15,15))
+sb.heatmap(train_sample_feature.corr(), annot=True)
+
+
+#%%
+df = pd.DataFrame(test["type"].unique())
 df
 
 #%%
-train_sample = train.sample(n=10000)
+# train_sample = train.sample(n=100)
 # sb.relplot(x="molecule_name", y="scalar_coupling_constant", data=train_sample)
-plt.scatter(train_sample["molecule_name"], train_sample["calar_coupling_constant"])
+# plt.scatter(train_sample["molecule_name"], train_sample["scalar_coupling_constant"])
 
 #%%
 # train.describe()
@@ -51,49 +79,15 @@ plt.hist(train['scalar_coupling_constant'], bins=100)
 
 
 #%%
-City_data = pd.read_csv("CityList_input.csv")
-City_data = City_data.drop('ID', axis=1)
-CityData = City_data.rename(columns = {'City_name':'City'})
-CityData
-
-
-#%%
-
-acc_dic = {}
-
-train['WhatIsData'] = 'Train'
-test['WhatIsData'] = 'Test'
-test['revenue'] = 9999999999
-alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
-
-alldata["Open Date"] = pd.to_datetime(alldata["Open Date"])
-alldata["Year"] = alldata["Open Date"].apply(lambda x:x.year)
-alldata["Month"] = alldata["Open Date"].apply(lambda x:x.month)
-alldata["Day"] = alldata["Open Date"].apply(lambda x:x.day)
-alldata["kijun"] = "2015-04-27"
-alldata["kijun"] = pd.to_datetime(alldata["kijun"])
-alldata["BusinessPeriod"] = (alldata["kijun"] - alldata["Open Date"]).apply(lambda x: x.days)
-alldata = pd.merge(alldata, CityData, how="left", on="City")
-
-alldata = alldata.drop('Open Date', axis=1)
-alldata = alldata.drop('kijun', axis=1)
-alldata = alldata.drop('City', axis=1)
-alldata = alldata.drop('Area', axis=1)
-alldata = alldata.drop('Density', axis=1)
-
-#%%
-sb.relplot(x="Open Date", y="revenue", col="City Group", data=train)
-
-#%%
 
 # 訓練データ特徴量をリスト化
 cat_cols = alldata.dtypes[alldata.dtypes=='object'].index.tolist()
 num_cols = alldata.dtypes[alldata.dtypes!='object'].index.tolist()
 
-other_cols = ['Id','WhatIsData']
+other_cols = ['id','WhatIsData']
 # 余計な要素をリストから削除
 cat_cols.remove('WhatIsData') #学習データ・テストデータ区別フラグ除去
-num_cols.remove('Id') #Id削除
+num_cols.remove('id') #Id削除
 
 # カテゴリカル変数をダミー化
 cat = pd.get_dummies(alldata[cat_cols])
@@ -104,16 +98,16 @@ all_data = pd.concat([alldata[other_cols],alldata[num_cols].fillna(0),cat],axis=
 # plt.hist(np.log(train['revenue']), bins=50)
 # plt.hist(train['revenue'], bins=50)
 
-train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','Id'], axis=1).reset_index(drop=True)
-test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','revenue'], axis=1).reset_index(drop=True)
+train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','id'], axis=1).reset_index(drop=True)
+test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','scalar_coupling_constant'], axis=1).reset_index(drop=True)
 
-x_ = train_.drop('revenue',axis=1)
-y_ = train_.loc[:, ['revenue']]
-y_ = np.log(y_)
-test_feature = test_.drop('Id',axis=1)
+#%%
+x_ = train_sample.drop('scalar_coupling_constant',axis=1)
+y_ = train_sample.loc[:, ['scalar_coupling_constant']]
+test_feature = test_.drop('id',axis=1)
 
 X_train, X_test, y_train, y_test = train_test_split(
-    x_, y_, random_state=0, train_size=0.9,shuffle=True)
+    x_, y_, random_state=0, train_size=0.7,shuffle=True)
 
 #%%
 # サンプルから欠損値と割合、データ型を調べる関数
@@ -137,7 +131,7 @@ def Datatype_table(df):
         Datatype_table_len = Datatype_table.rename(columns = {0:'データ型'})
         return Datatype_table_len
     
-Datatype_table(train)
+Datatype_table(magnetic_shielding_tensors)
 
 #%%
 test.describe()
