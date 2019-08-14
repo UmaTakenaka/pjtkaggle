@@ -22,6 +22,9 @@ test = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/tr
 # sample_submission = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/sample_submission.csv")
 structures = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/structures.csv")
 
+# 計算用にサンプルデータを作る
+train_sample = train.sample(n=10000)
+
 #%%
 #%%
 #データを読み込む
@@ -31,17 +34,13 @@ mulliken_charges = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar
 potential_energy = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/potential_energy.csv")
 
 #%%
-# 計算用にサンプルデータを作る
-train_sample = train.sample(n=10000)
-
-#%%
 # データをマージ
 acc_dic = {}
 
 train_sample['WhatIsData'] = 'Train'
 test['WhatIsData'] = 'Test'
 test['scalar_coupling_constant'] = 9999999999
-alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
+alldata = pd.concat([train_sample,test],axis=0).reset_index(drop=True)
 
 #%%
 alldata["type"][alldata["type"] == "1JHC" ] = 0
@@ -52,11 +51,12 @@ alldata["type"][alldata["type"] == "2JHC" ] = 4
 alldata["type"][alldata["type"] == "3JHH"] = 5
 alldata["type"][alldata["type"] == "3JHC" ] = 6
 alldata["type"][alldata["type"] == "3JHN"] = 7
+# alldata["type"] = alldata["type"].astype(int)
 
 alldata["molecule_name"] = alldata["molecule_name"].str[-6:].astype(int)
 
 #%%
-alldata["molecule_name"].describe()
+alldata["molecule_name"].mean()
 
 #%%
 train_sample_feature = train_sample.drop(["id"], axis=1)
@@ -104,8 +104,8 @@ train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','id'], axi
 test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','scalar_coupling_constant'], axis=1).reset_index(drop=True)
 
 #%%
-x_ = train_sample.drop('scalar_coupling_constant',axis=1)
-y_ = train_sample.loc[:, ['scalar_coupling_constant']]
+x_ = train_.drop('scalar_coupling_constant',axis=1)
+y_ = train_.loc[:, ['scalar_coupling_constant']]
 test_feature = test_.drop('id',axis=1)
 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -133,7 +133,7 @@ def Datatype_table(df):
         Datatype_table_len = Datatype_table.rename(columns = {0:'データ型'})
         return Datatype_table_len
     
-Datatype_table(magnetic_shielding_tensors)
+Datatype_table(test_)
 
 #%%
 test.describe()
@@ -202,6 +202,16 @@ clf.fit(X_train, y_train)
 acc_forest = clf.score(X_train, y_train)
 acc_dic.update(model_forest = round(acc_forest,3))
 print(f"training dataに対しての精度: {clf.score(X_train, y_train):.2}")
+prediction_en = clf.predict(test_feature)
+
+#%%
+# RandomForestRegressorによる予測
+forest = RandomForestRegressor().fit(X_train, y_train)
+prediction_rf = forest.predict(test_feature)
+
+acc_forest = forest.score(X_train, y_train)
+acc_dic.update(model_forest = round(acc_forest,3))
+print(f"training dataに対しての精度: {forest.score(X_train, y_train):.2}")
 
 #%%
 # lasso回帰による予測
@@ -259,5 +269,8 @@ City_unique = alldata["City"].unique()
 df_city = pd.DataFrame(City_unique)
 # csvとして書き出し
 df_city.to_csv("CityList.csv", index_label = ["City_name"])
+
+#%%
+test_["molecule_name"].describe()
 
 #%%
