@@ -191,12 +191,17 @@ prediction_lgb = np.exp(gbm.predict(test_feature))
 
 #%%
 # RandomForestRegressorによる予測
-forest = RandomForestRegressor().fit(X_train, y_train)
-prediction_rf = np.exp(forest.predict(test_feature))
+forest_parameters = {'n_estimators': [500, 700, 1000],
+                'max_depth': [None, 1, 2, 3],
+                'min_samples_split': [1, 2, 3]}
 
-acc_forest = forest.score(X_train, y_train)
+# clf = ensemble.RandomForestRegressor(n_estimators=500, n_jobs=1, verbose=1)
+clf = GridSearchCV(RandomForestRegressor(), forest_parameters, cv=5, scoring=r2_score, n_jobs=-1, verbose=1)
+clf.fit(X_train, y_train)
+
+acc_forest = clf.score(X_train, y_train)
 acc_dic.update(model_forest = round(acc_forest,3))
-print(f"training dataに対しての精度: {forest.score(X_train, y_train):.2}")
+print(f"training dataに対しての精度: {clf.score(X_train, y_train):.2}")
 
 #%%
 # lasso回帰による予測
