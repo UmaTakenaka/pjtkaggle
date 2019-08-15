@@ -16,8 +16,8 @@ import seaborn as sb
 
 #%%
 #データを読み込む
-train = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_processed.csv")
-test = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling//test_processed.csv")
+train = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train.csv")
+test = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling//test.csv")
 # sample_submission = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/sample_submission.csv")
 structures = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling//structures.csv")
 
@@ -47,19 +47,25 @@ train = map_atom_info(train, 1)
 test = map_atom_info(test, 0)
 test = map_atom_info(test, 1)
 
-# 各分子の原子間距離を測る
-train_p_0 = train[['x_0', 'y_0', 'z_0']].values
-train_p_1 = train[['x_1', 'y_1', 'z_1']].values
-test_p_0 = test[['x_0', 'y_0', 'z_0']].values
-test_p_1 = test[['x_1', 'y_1', 'z_1']].values
-
-train['dist_speedup'] = np.linalg.norm(train_p_0 - train_p_1, axis=1)
-test['dist_speedup'] = np.linalg.norm(test_p_0 - test_p_1, axis=1)
-
 #%%
-# 中間ファイルとして書き出す
-train.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_processed.csv")
-test.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_processed.csv")
+def add_center(df):
+    df['x_c'] = ((df['x_1'] + df['x_0']) * np.float32(0.5))
+    df['y_c'] = ((df['y_1'] + df['y_0']) * np.float32(0.5))
+    df['z_c'] = ((df['z_1'] + df['z_0']) * np.float32(0.5))
+
+def add_distance_to_center(df):
+    df['d_c'] = ((
+        (df['x_c'] - df['x'])**np.float32(2) +
+        (df['y_c'] - df['y'])**np.float32(2) + 
+        (df['z_c'] - df['z'])**np.float32(2)
+    )**np.float32(0.5))
+
+def add_distance_between(df, suffix1, suffix2):
+    df[f'd_{suffix1}_{suffix2}'] = ((
+        (df[f'x_{suffix1}'] - df[f'x_{suffix2}'])**np.float32(2) +
+        (df[f'y_{suffix1}'] - df[f'y_{suffix2}'])**np.float32(2) + 
+        (df[f'z_{suffix1}'] - df[f'z_{suffix2}'])**np.float32(2)
+    )**np.float32(0.5))
 
 #%%
 # 計算用にサンプルデータを作る
@@ -89,12 +95,15 @@ alldata["atom_1"][alldata["atom_1"] == "H" ] = 1
 alldata["atom_1"][alldata["atom_1"] == "C" ] = 6
 alldata["atom_1"][alldata["atom_1"] == "N" ] = 7
 
-alldata["molecule_name"] = alldata["molecule_name"].str[-6:].astype(int)
-
 alldata["type"].astype(int)
 alldata["atom_0"].astype(int)
 alldata["atom_1"].astype(int)
 # alldata["scc_class"].astype(int)
+
+#%%
+# 中間ファイルとして書き出す
+train.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_processed.csv")
+test.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_processed.csv")
 
 #%%
 alldata.describe()
@@ -152,6 +161,12 @@ X_train, X_test, y_train, y_test = train_test_split(
     x_, y_, test_size=0.33, random_state=42)
 
 #%%
+alldata
+
+#%%
+test.describe()
+
+#%%
 # RandomForestRegressorによる予測
 forest_parameters = {'n_estimators': [1000]}
 
@@ -167,61 +182,6 @@ prediction_rf_gs = clf.predict(test_feature)
 
 #%%
 best
-
-#%%
-# lightGBMによる予測
-lgb_train = lgb.Dataset(X_train, y_train)
-lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-
-# LightGBM parameters
-params = {
-        'task' : 'train',
-        'boosting_type' : 'gbdt',
-        'objective' : 'regression',
-        'metric' : {'l2'},
-        'num_leaves' : 31,
-        'learning_rate' : 0.1,
-        'feature_fraction' : 0.9,
-        'bagging_fraction' : 0.8,
-        'bagging_freq': 5,
-        'verbose' : 0,
-        'n_jobs': 2
-}
-
-gbm = lgb.train(params,
-            lgb_train,
-            num_boost_round=10000,
-            valid_sets=lgb_eval,
-            early_stopping_rounds=10)
-
-prediction_lgb = gbm.predict(test_feature)
-
-#%%
-# LGBMRegressorによる予測
-LGB_PARAMS = {
-    'objective': 'regression',
-    'metric': 'mae',
-    'verbosity': -1,
-    'boosting_type': 'gbdt',
-    'learning_rate': 0.2,
-    'num_leaves': 128,
-    'min_child_samples': 79,
-    'max_depth': 9,
-    'subsample_freq': 1,
-    'subsample': 0.9,
-    'bagging_seed': 11,
-    'reg_alpha': 0.1,
-    'reg_lambda': 0.3,
-    'colsample_bytree': 1.0
-}
-
-model = LGBMRegressor(**LGB_PARAMS, n_estimators=10000, n_jobs = -1)
-model.fit(X_train, y_train, 
-        eval_set=[(X_train, y_train), (X_test, y_test)], eval_metric='mae',
-        verbose=500, early_stopping_rounds=100)
-
-prediction_lgb = model.predict(test_feature)
-
 
 #%%
 # RandomForestRegressorによる予測
@@ -279,7 +239,7 @@ Acc[0]
 # Idを取得
 Id = np.array(test["id"]).astype(int)
 # 予測データとIdをデータフレームへ落とし込む
-result = pd.DataFrame(prediction_lgb, Id, columns = ["scalar_coupling_constant"])
+result = pd.DataFrame(prediction_rf, Id, columns = ["scalar_coupling_constant"])
 # csvとして書き出し
 result.to_csv("⁨prediction_Molecule_lgb.csv", index_label = ["Id"])
 
