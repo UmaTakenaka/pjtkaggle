@@ -9,18 +9,22 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, ElasticNet
 from sklearn.ensemble import RandomForestRegressor
-import lightgbm as lgb
+from lightgbm import LGBMRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 import seaborn as sb
 
-
 #%%
 #データを読み込む
-train = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/train.csv")
-test = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/test.csv")
+train = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_processed.csv")
+test = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling//test_processed.csv")
 # sample_submission = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/sample_submission.csv")
-structures = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/structures.csv")
+# structures = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling//structures.csv")
+
+# Win
+# C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/
+# Mac
+# ⁨/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/
 
 
 #%%
@@ -43,7 +47,6 @@ train = map_atom_info(train, 1)
 test = map_atom_info(test, 0)
 test = map_atom_info(test, 1)
 
-#%%
 # 各分子の原子間距離を測る
 train_p_0 = train[['x_0', 'y_0', 'z_0']].values
 train_p_1 = train[['x_1', 'y_1', 'z_1']].values
@@ -55,12 +58,12 @@ test['dist_speedup'] = np.linalg.norm(test_p_0 - test_p_1, axis=1)
 
 #%%
 # 中間ファイルとして書き出す
-train.to_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/train_processed.csv")
-test.to_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/test_processed.csv")
+train.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_processed.csv")
+test.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_processed.csv")
 
 #%%
 # 計算用にサンプルデータを作る
-train_sample = train.sample(n=100000)
+train_sample = train.sample(n=10000)
 
 #%%
 # データをマージ
@@ -68,10 +71,10 @@ acc_dic = {}
 
 train['WhatIsData'] = 'Train'
 test['WhatIsData'] = 'Test'
-test['scalar_coupling_constant'] = 9999999999
 alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
 
-#%%
+test['scalar_coupling_constant'] = 9999999999
+
 alldata["type"][alldata["type"] == "1JHC" ] = 0
 alldata["type"][alldata["type"] == "2JHH" ] = 1
 alldata["type"][alldata["type"] == "1JHN"] = 2
@@ -88,10 +91,10 @@ alldata["atom_1"][alldata["atom_1"] == "N" ] = 7
 
 alldata["molecule_name"] = alldata["molecule_name"].str[-6:].astype(int)
 
-#%%
 alldata["type"].astype(int)
 alldata["atom_0"].astype(int)
 alldata["atom_1"].astype(int)
+# alldata["scc_class"].astype(int)
 
 #%%
 alldata.describe()
@@ -141,40 +144,15 @@ all_data = pd.concat([alldata[other_cols],alldata[num_cols].fillna(0),cat],axis=
 train_ = all_data[all_data['WhatIsData']=='Train'].drop(['WhatIsData','id'], axis=1).reset_index(drop=True)
 test_ = all_data[all_data['WhatIsData']=='Test'].drop(['WhatIsData','scalar_coupling_constant'], axis=1).reset_index(drop=True)
 
-#%%
-train.describe()
-
-#%%
 x_ = train_.drop('scalar_coupling_constant',axis=1)
 y_ = train_.loc[:, ['scalar_coupling_constant']]
 test_feature = test_.drop('id',axis=1)
 
 X_train, X_test, y_train, y_test = train_test_split(
-    x_, y_, random_state=0, train_size=0.7,shuffle=True)
+    x_, y_, test_size=0.33, random_state=42)
 
 #%%
-# サンプルから欠損値と割合、データ型を調べる関数
-def Missing_table(df):
-    null_val = df.isnull().sum()
-    # null_val = df.isnull().sum()[train.isnull().sum()>0].sort_values(ascending=False)
-    percent = 100 * null_val/len(df)
-    # list_type = df.isnull().sum().dtypes #データ型
-    Missing_table = pd.concat([null_val, percent], axis = 1)
-    missing_table_len = Missing_table.rename(
-    columns = {0:'欠損値', 1:'%', 2:'type'})
-    return missing_table_len.sort_values(by=['欠損値'], ascending=False)
-
-Missing_table(test)
-
-#%%
-# サンプルからデータ型を調べる関数
-def Datatype_table(df):
-        list_type = df.dtypes #データ型
-        Datatype_table = pd.concat([list_type], axis = 1)
-        Datatype_table_len = Datatype_table.rename(columns = {0:'データ型'})
-        return Datatype_table_len
-    
-Datatype_table(alldata)
+alldata
 
 #%%
 test.describe()
@@ -201,47 +179,55 @@ params = {
 
 gbm = lgb.train(params,
             lgb_train,
-            num_boost_round=500,
+            num_boost_round=10000,
             valid_sets=lgb_eval,
             early_stopping_rounds=10)
 
-# cv_results = lgb.cv(params,
-#                 lgb_train,
-#                 num_boost_round=100,
-#                 early_stopping_rounds=10,
-#                 nfold=5,
-#                 shuffle=True,
-#                 stratified=False,
-#                 seed=42)
-
-# np.mean(cv_results["l2-mean"])
-
-# prediction_train = gbm.predict(X_train)
-
-# y_pred = []
-# for x in prediction_train:
-#         y_pred.append(x)
-
-# y_true = y_train['revenue'].tolist()
-
-# acc_lightGBM =  mean_squared_error(y_true, np.exp(y_pred))
-# acc_dic.update(model_lightGBM = round(acc_lightGBM,3))
-
 prediction_lgb = gbm.predict(test_feature)
+
+#%%
+# LGBMRegressorによる予測
+LGB_PARAMS = {
+    'objective': 'regression',
+    'metric': 'mae',
+    'verbosity': -1,
+    'boosting_type': 'gbdt',
+    'learning_rate': 0.2,
+    'num_leaves': 128,
+    'min_child_samples': 79,
+    'max_depth': 9,
+    'subsample_freq': 1,
+    'subsample': 0.9,
+    'bagging_seed': 11,
+    'reg_alpha': 0.1,
+    'reg_lambda': 0.3,
+    'colsample_bytree': 1.0
+}
+
+model = LGBMRegressor(**LGB_PARAMS, n_estimators=10000, n_jobs = -1)
+model.fit(X_train, y_train, 
+        eval_set=[(X_train, y_train), (X_test, y_test)], eval_metric='mae',
+        verbose=500, early_stopping_rounds=100)
+
+prediction_lgb = model.predict(test_feature)
 
 
 #%%
 # RandomForestRegressorによる予測
-forest_parameters = {'n_estimators': [3, 10, 100, 500, 1000]}
+forest_parameters = {'n_estimators': [1000]}
 
 # clf = ensemble.RandomForestRegressor(n_estimators=500, n_jobs=1, verbose=1)
 clf = GridSearchCV(RandomForestRegressor(), forest_parameters, cv=5, n_jobs=-1, verbose=1)
 clf.fit(X_train, y_train)
+best = clf.best_estimator_
 
-acc_forest = clf.score(X_train, y_train)
-acc_dic.update(model_forest = round(acc_forest,3))
-print(f"training dataに対しての精度: {clf.score(X_train, y_train):.2}")
+# acc_forest = clf.score(X_train, y_train)
+# acc_dic.update(model_forest = round(acc_forest,3))
+# print(f"training dataに対しての精度: {clf.score(X_train, y_train):.2}")
 prediction_rf_gs = clf.predict(test_feature)
+
+#%%
+best
 
 #%%
 # RandomForestRegressorによる予測
@@ -299,9 +285,9 @@ Acc[0]
 # Idを取得
 Id = np.array(test["id"]).astype(int)
 # 予測データとIdをデータフレームへ落とし込む
-result = pd.DataFrame(prediction_rf, Id, columns = ["scalar_coupling_constant"])
+result = pd.DataFrame(prediction_lgb, Id, columns = ["scalar_coupling_constant"])
 # csvとして書き出し
-result.to_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/prediction_Molecule.csv", index_label = ["Id"])
+result.to_csv("⁨prediction_Molecule_lgb.csv", index_label = ["Id"])
 
 #%%
 City_unique = alldata["City"].unique()
@@ -319,3 +305,30 @@ dipole_moments = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-c
 magnetic_shielding_tensors = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/magnetic_shielding_tensors.csv")
 mulliken_charges = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/mulliken_charges.csv")
 potential_energy = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/potential_energy.csv")
+
+#%%
+plt.hist(train_sample['scalar_coupling_constant'], bins=50)
+
+#%%
+# サンプルから欠損値と割合、データ型を調べる関数
+def Missing_table(df):
+    null_val = df.isnull().sum()
+    # null_val = df.isnull().sum()[train.isnull().sum()>0].sort_values(ascending=False)
+    percent = 100 * null_val/len(df)
+    # list_type = df.isnull().sum().dtypes #データ型
+    Missing_table = pd.concat([null_val, percent], axis = 1)
+    missing_table_len = Missing_table.rename(
+    columns = {0:'欠損値', 1:'%', 2:'type'})
+    return missing_table_len.sort_values(by=['欠損値'], ascending=False)
+
+Missing_table(test)
+
+#%%
+# サンプルからデータ型を調べる関数
+def Datatype_table(df):
+        list_type = df.dtypes #データ型
+        Datatype_table = pd.concat([list_type], axis = 1)
+        Datatype_table_len = Datatype_table.rename(columns = {0:'データ型'})
+        return Datatype_table_len
+    
+Datatype_table(alldata)
