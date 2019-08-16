@@ -1,3 +1,4 @@
+#%%
 import pandas as pd
 import numpy as np
 
@@ -10,14 +11,16 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.ensemble import RandomForestRegressor
 
 import matplotlib.pyplot as plt
-import seaborn as sns
+# import seaborn as sns
 
-from lightgbm import LGBMRegressor
+# from lightgbm import LGBMRegressor
 
 # Win
 # C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/
 # Mac
 # ⁨/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/
+# Azure RDP
+# C:/KaggleFiles/champs-scalar-coupling/
 
 #%%
 ATOMIC_NUMBERS = {
@@ -36,11 +39,11 @@ train_dtypes = {
     'type': 'category',
     'scalar_coupling_constant': 'float32'
 }
-train_csv = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train.csv', index_col='id', dtype=train_dtypes)
+train_csv = pd.read_csv(f'C:/KaggleFiles/champs-scalar-coupling/train.csv', index_col='id', dtype=train_dtypes)
 train_csv['molecule_index'] = train_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 train_csv = train_csv[['molecule_index', 'atom_index_0', 'atom_index_1', 'type', 'scalar_coupling_constant']]
 
-test_csv = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling//test.csv', index_col='id', dtype=train_dtypes)
+test_csv = pd.read_csv(f'C:/KaggleFiles/champs-scalar-coupling/test.csv', index_col='id', dtype=train_dtypes)
 test_csv['molecule_index'] = test_csv['molecule_name'].str.replace('dsgdb9nsd_', '').astype('int32')
 test_csv = test_csv[['molecule_index', 'atom_index_0', 'atom_index_1', 'type']]
 
@@ -52,12 +55,12 @@ structures_dtypes = {
     'y': 'float32',
     'z': 'float32'
 }
-structures_csv = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling//structures.csv", dtype=structures_dtypes)
+structures_csv = pd.read_csv("C:/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
 structures_csv['molecule_index'] = structures_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 structures_csv = structures_csv[['molecule_index', 'atom_index', 'atom', 'x', 'y', 'z']]
 structures_csv['atom'] = structures_csv['atom'].replace(ATOMIC_NUMBERS).astype('int8')
 
-submission_csv = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/sample_submission.csv", index_col='id')
+submission_csv = pd.read_csv("C:/KaggleFiles/champs-scalar-coupling/sample_submission.csv", index_col='id')
 
 #%%
 def build_type_dataframes(base, structures, coupling_type):
@@ -202,7 +205,8 @@ def train_and_predict_for_one_coupling_type(coupling_type, submission, n_atoms):
     # X_train, X_test, y_train, y_test = train_test_split(
     # X_, y_, test_size=0.2, random_state=128)
 
-    forest = RandomForestRegressor().fit(X_, y_)
+    forest = RandomForestRegressor(n_estimators=20000, n_jobs=-1)
+    forest.fit(X_, y_)
     y_pred += forest.predict(test_feature)
 
     submission.loc[test_csv['type'] == coupling_type, 'scalar_coupling_constant'] = y_pred
