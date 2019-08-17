@@ -205,7 +205,7 @@ def train_and_predict_for_one_coupling_type(coupling_type, submission, n_atoms):
     # X_train, X_test, y_train, y_test = train_test_split(
     # X_, y_, test_size=0.2, random_state=128)
 
-    forest = RandomForestRegressor(n_estimators=20000, n_jobs=-1)
+    forest = RandomForestRegressor(n_estimators=1000, n_jobs=-1)
     forest.fit(X_, y_)
     y_pred += forest.predict(test_feature)
 
@@ -213,6 +213,7 @@ def train_and_predict_for_one_coupling_type(coupling_type, submission, n_atoms):
     
     return y_pred
 #%%
+%%time
 model_params = {
     '1JHN': 7,
     '1JHC': 10,
@@ -228,9 +229,6 @@ submission = submission_csv.copy()
 for coupling_type in model_params.keys():
     train_and_predict_for_one_coupling_type(
         coupling_type, submission, n_atoms=model_params[coupling_type])
-
-
-#%%
 submission.to_csv("⁨prediction_Molecule_rf2.csv", index_label = ["id"])
 
 
