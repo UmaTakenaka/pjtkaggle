@@ -9,6 +9,7 @@ import copy
 from sklearn.model_selection import GroupKFold, train_test_split
 from sklearn.metrics import mean_absolute_error
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import GridSearchCV
 
 import matplotlib.pyplot as plt
 # import seaborn as sns
@@ -202,11 +203,14 @@ def train_and_predict_for_one_coupling_type(coupling_type, submission, n_atoms):
     test_feature, _, __ = build_x_y_data(test_csv, coupling_type, n_atoms)
     y_pred = np.zeros(test_feature.shape[0], dtype='float32')
 
-    # X_train, X_test, y_train, y_test = train_test_split(
-    # X_, y_, test_size=0.2, random_state=128)
+    X_train, X_test, y_train, y_test = train_test_split(
+    X_, y_, test_size=0.2, random_state=128)
 
-    forest = RandomForestRegressor(n_estimators=1000, n_jobs=-1)
-    forest.fit(X_, y_)
+    params = {'n_estimators'  : [100], 'n_jobs': [-1]}
+
+    forest = RandomForestRegressor()
+    model = GridSearchCV(forest, params, cv = 5, scoring= 'mean_squared_error', n_jobs =1)
+    model.fit(X_train, y_train)
     y_pred += forest.predict(test_feature)
 
     submission.loc[test_csv['type'] == coupling_type, 'scalar_coupling_constant'] = y_pred
