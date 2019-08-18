@@ -160,11 +160,6 @@ test_feature = test_.drop('id',axis=1)
 X_train, X_test, y_train, y_test = train_test_split(
     x_, y_, test_size=0.33, random_state=42)
 
-#%%
-alldata
-
-#%%
-test.describe()
 
 #%%
 # RandomForestRegressorによる予測

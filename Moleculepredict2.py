@@ -40,11 +40,11 @@ train_dtypes = {
     'type': 'category',
     'scalar_coupling_constant': 'float32'
 }
-train_csv = pd.read_csv(f'C:/KaggleFiles/champs-scalar-coupling/train.csv', index_col='id', dtype=train_dtypes)
+train_csv = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train.csv', index_col='id', dtype=train_dtypes)
 train_csv['molecule_index'] = train_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 train_csv = train_csv[['molecule_index', 'atom_index_0', 'atom_index_1', 'type', 'scalar_coupling_constant']]
 
-test_csv = pd.read_csv(f'C:/KaggleFiles/champs-scalar-coupling/test.csv', index_col='id', dtype=train_dtypes)
+test_csv = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test.csv', index_col='id', dtype=train_dtypes)
 test_csv['molecule_index'] = test_csv['molecule_name'].str.replace('dsgdb9nsd_', '').astype('int32')
 test_csv = test_csv[['molecule_index', 'atom_index_0', 'atom_index_1', 'type']]
 
@@ -56,12 +56,12 @@ structures_dtypes = {
     'y': 'float32',
     'z': 'float32'
 }
-structures_csv = pd.read_csv("C:/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
+structures_csv = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
 structures_csv['molecule_index'] = structures_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 structures_csv = structures_csv[['molecule_index', 'atom_index', 'atom', 'x', 'y', 'z']]
 structures_csv['atom'] = structures_csv['atom'].replace(ATOMIC_NUMBERS).astype('int8')
 
-submission_csv = pd.read_csv("C:/KaggleFiles/champs-scalar-coupling/sample_submission.csv", index_col='id')
+submission_csv = pd.read_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/sample_submission.csv", index_col='id')
 
 #%%
 def build_type_dataframes(base, structures, coupling_type):
@@ -219,13 +219,13 @@ def train_and_predict_for_one_coupling_type(coupling_type, submission, n_atoms):
 #%%
 %%time
 model_params = {
-    '1JHN': 7,
-    '1JHC': 10,
+    '1JHC': 7,
+    '1JHN': 10,
+    '2JHC': 9,
     '2JHH': 9,
     '2JHN': 9,
-    '2JHC': 9,
-    '3JHH': 9,
-    '3JHC': 10,
+    '3JHC': 9,
+    '3JHH': 10,
     '3JHN': 10
 }
 
@@ -241,5 +241,43 @@ submission.describe()
 
 #%%
 test_csv.head()
+
+#%%
+test_csv.sort_values(by=["type"], ascending=True)
+
+#%%
+model_params = {
+    '1JHC': 7,
+    '1JHN': 10,
+    '2JHC': 9,
+    '2JHH': 9,
+    '2JHN': 9,
+    '3JHC': 9,
+    '3JHH': 10,
+    '3JHN': 10
+}
+
+for coupling_type in model_params.keys():
+    if coupling_type == "1JHC" or "1JHN":
+        X_, y_, groups = build_x_y_data(train_csv, coupling_type, n_atoms=model_params[coupling_type])
+        # test_feature, _, __ = build_x_y_data(test_csv, coupling_type, n_atoms)
+        # y_pred = np.zeros(test_feature.shape[0], dtype='float32')
+
+        X_train, X_test, y_train, y_test = train_test_split(
+        X_, y_, test_size=0.2, random_state=128)
+
+        params = {'n_estimators'  : [1000], 'n_jobs': [-1]}
+
+        # forest = RandomForestRegressor()
+        # model = GridSearchCV(forest, params, cv = 5)
+        # model.fit(X_train, y_train)
+        # y_pred += model.predict(test_feature)
+
+        # submission.loc[test_csv['type'] == coupling_type, 'scalar_coupling_constant'] = y_pred
+    else:
+        X_, y_, groups = build_x_y_data(train_csv, coupling_type, n_atoms=model_params[coupling_type])
+
+#%%
+train_csv
 
 #%%

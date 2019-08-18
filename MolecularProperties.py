@@ -63,7 +63,18 @@ test.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_process
 
 #%%
 # 計算用にサンプルデータを作る
-train_sample = train.sample(n=10000)
+train_sample = train.sample(n=1000)
+# train_1JHN=train[train["type"] == "1JHN"]
+# plt.hist(train_1JHN["scalar_coupling_constant"], bins=100)
+
+
+#%%
+# plt.scatter(train_sample["type"], train_sample["scalar_coupling_constant"])
+train_group1 = train_sample[train_sample["type"] == "1JHC"]
+# train_group2 = train_sample[train_sample["type"] == "3JHC"|train_sample["type"] == "3JHH"]
+# train_group3 = train_sample[train_sample["type"] == "1JHN"]
+# plt.hist(train_group3["scalar_coupling_constant"], bins=100)
+train_group1
 
 #%%
 # データをマージ
@@ -111,8 +122,11 @@ df
 
 #%%
 # train_sample = train.sample(n=100)
-# sb.relplot(x="molecule_name", y="scalar_coupling_constant", data=train_sample)
+sb.relplot(x="type", y="scalar_coupling_constant", data=train_sample)
 # plt.scatter(train_sample["molecule_name"], train_sample["scalar_coupling_constant"])
+
+#%%
+train_sample
 
 #%%
 # train.describe()
