@@ -133,7 +133,7 @@ def build_couple_dataframe(some_csv, structures_csv, coupling_type, n_atoms=10):
         atoms = atoms.drop(['scalar_coupling_constant'], axis=1)
         
     add_center(atoms)
-    atoms = atoms.drop(['x_0', 'y_0', 'z_0', 'x_1', 'y_1', 'z_1'], axis=1)
+    # atoms = atoms.drop(['x_0', 'y_0', 'z_0', 'x_1', 'y_1', 'z_1'], axis=1)
 
     atoms = merge_all_atoms(atoms, structures)
     
@@ -209,9 +209,9 @@ def train_and_predict_for_one_coupling_type(coupling_type, submission, n_atoms):
     params = {'n_estimators'  : [100], 'n_jobs': [-1]}
 
     forest = RandomForestRegressor()
-    model = GridSearchCV(forest, params, cv = 5, scoring= 'mean_squared_error', n_jobs =1)
+    model = GridSearchCV(forest, params, cv = 5)
     model.fit(X_train, y_train)
-    y_pred += forest.predict(test_feature)
+    y_pred += model.predict(test_feature)
 
     submission.loc[test_csv['type'] == coupling_type, 'scalar_coupling_constant'] = y_pred
     
