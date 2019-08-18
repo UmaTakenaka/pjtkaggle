@@ -229,15 +229,15 @@ test_df_group2.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/te
 test_df_group3.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_group3.csv")
 
 #%%
-# train_df_group1 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group1.csv')
-# train_df_group2 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group2.csv')
-# train_df_group3 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group3.csv')
-train_df_group3.fillna(0)
+train_df_group1 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group1.csv')
+train_df_group2 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group2.csv')
+train_df_group3 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group3.csv')
+train_df_group3.fillna(0, inplace=True)
 
-# test_df_group1 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_test1.csv')
-# test_df_group2 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_test2.csv')
-# test_df_group3 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_test3.csv')
-test_df_group3.fillna(0)
+test_df_group1 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_group1.csv')
+test_df_group2 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_group2.csv')
+test_df_group3 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_group3.csv')
+test_df_group3.fillna(0, inplace=True)
 
 # train_df_group1.drop('Unnamed: 0', axis=1)
 # train_df_group2.drop('Unnamed: 0', axis=1)
@@ -285,6 +285,10 @@ y_pred_group2 += model.predict(test_feature_group2)
 model.fit(X_train_group3, y_train_group3)
 y_pred_group3 += model.predict(test_feature_group3)
 
+#%%
+np.savetxt('out_group1.csv',y_pred_group1,delimiter=',')
+np.savetxt('out_group2.csv',y_pred_group2,delimiter=',')
+np.savetxt('out_group3.csv',y_pred_group3,delimiter=',')
 
 #%%
 def train_and_predict_for_one_coupling_type(coupling_type, submission, n_atoms):
@@ -349,4 +353,20 @@ train_df_group2 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-co
 
 #%%
 train_df_group3
+#%%
+# サンプルから欠損値と割合、データ型を調べる関数
+def Missing_table(df):
+    null_val = df.isnull().sum()
+    # null_val = df.isnull().sum()[train.isnull().sum()>0].sort_values(ascending=False)
+    percent = 100 * null_val/len(df)
+    # list_type = df.isnull().sum().dtypes #データ型
+    Missing_table = pd.concat([null_val, percent], axis = 1)
+    missing_table_len = Missing_table.rename(
+    columns = {0:'欠損値', 1:'%', 2:'type'})
+    return missing_table_len.sort_values(by=['欠損値'], ascending=False)
+
+Missing_table(train_df_group3)
+
+#%%
+train_df_group3.fillna(0,inplace=True)
 #%%
