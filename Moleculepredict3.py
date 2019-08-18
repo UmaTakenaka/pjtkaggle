@@ -228,6 +228,11 @@ test_df_group1.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/te
 test_df_group2.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_group2.csv")
 test_df_group3.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_group3.csv")
 
+#%%
+train_df_group1 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group1.csv')
+train_df_group2 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group2.csv')
+train_df_group3 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group3.csv')
+train_df_group3.fillna(0)
 
 #%%
 def train_and_predict_for_one_coupling_type(coupling_type, submission, n_atoms):
@@ -284,6 +289,12 @@ submission.to_csv("⁨prediction_Molecule_rf2.csv", index_label = ["id"])
 
 
 #%%
-test_csv.head()
+train_df_group3 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group3.csv')
 
+#%%
+train_df_group1 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group1.csv')
+train_df_group2 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group2.csv')
+
+#%%
+train_df_group3
 #%%
