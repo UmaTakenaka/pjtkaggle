@@ -186,14 +186,16 @@ def build_x_y_data(some_csv, coupling_type, n_atoms):
     df = df.fillna(0)
     print(df.columns)
     
-    if 'scalar_coupling_constant' in df:
-        X_data = df.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
-        y_data = df['scalar_coupling_constant'].values.astype('float32')
-    else:
-        X_data = df.values.astype('float32')
-        y_data = None
+    # if 'scalar_coupling_constant' in df:
+    #     X_data = df.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
+    #     y_data = df['scalar_coupling_constant'].values.astype('float32')
+    # else:
+    #     X_data = df.values.astype('float32')
+    #     y_data = None
     
-    return X_data, y_data, full.molecule_index.values
+    # return X_data, y_data, full.molecule_index.values
+
+    return df
 
 #%%
 def train_and_predict_for_one_coupling_type(coupling_type, submission, n_atoms):
@@ -217,7 +219,6 @@ def train_and_predict_for_one_coupling_type(coupling_type, submission, n_atoms):
     
     return y_pred
 #%%
-%%time
 model_params = {
     '1JHC': 7,
     '1JHN': 10,
