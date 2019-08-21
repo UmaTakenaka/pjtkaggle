@@ -206,7 +206,7 @@ train_df_group3 = pd.concat([train_df3,train_df4,train_df5,train_df6,train_df7,t
 test_df_group1 = build_x_y_data(test_csv, "1JHN", 7)
 index_df_group1 = get_index(test_csv, "1JHN")
 test_df_group2 = build_x_y_data(test_csv, "1JHC", 10)
-index_df_group1 = get_index(test_csv, "1JHC")
+index_df_group2 = get_index(test_csv, "1JHC")
 
 test_df3 = build_x_y_data(test_csv, "2JHC", 9)
 index_df3 = get_index(test_csv, "2JHC")
@@ -244,24 +244,25 @@ test_df_group2 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-cou
 test_df_group3 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_group3.csv')
 test_df_group3.fillna(0, inplace=True)
 
-# train_df_group1.drop('Unnamed: 0', axis=1)
+#%%
+train_df_group1.drop('Unnamed: 0', axis=1)
 # train_df_group2.drop('Unnamed: 0', axis=1)
 # train_df_group3.drop('Unnamed: 0', axis=1)
 
-# test_df_group1.drop('Unnamed: 0', axis=1)
+test_df_group1.drop('Unnamed: 0', axis=1)
 # test_df_group2.drop('Unnamed: 0', axis=1)
 # test_df_group3.drop('Unnamed: 0', axis=1)
 
 #%%
-X_data_group1 = train_df_group1.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
-y_data_group1 = train_df_group1['scalar_coupling_constant'].values.astype('float32')
-test_feature_group1 = test_df_group1
-y_pred_group1 = np.zeros(test_feature_group1.shape[0], dtype='float32')
+# X_data_group1 = train_df_group1.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
+# y_data_group1 = train_df_group1['scalar_coupling_constant'].values.astype('float32')
+# test_feature_group1 = test_df_group1
+# y_pred_group1 = np.zeros(test_feature_group1.shape[0], dtype='float32')
 
-X_data_group2 = train_df_group2.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
-y_data_group2 = train_df_group2['scalar_coupling_constant'].values.astype('float32')
-test_feature_group2 = test_df_group2
-y_pred_group2 = np.zeros(test_feature_group2.shape[0], dtype='float32')
+# X_data_group2 = train_df_group2.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
+# y_data_group2 = train_df_group2['scalar_coupling_constant'].values.astype('float32')
+# test_feature_group2 = test_df_group2
+# y_pred_group2 = np.zeros(test_feature_group2.shape[0], dtype='float32')
 
 X_data_group3 = train_df_group3.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
 y_data_group3 = train_df_group3['scalar_coupling_constant'].values.astype('float32')
@@ -275,25 +276,33 @@ model = GridSearchCV(forest, params, cv = 2)
 
 X_train_group1, X_test_group1, y_train_group1, y_test_group1 = train_test_split(
     X_data_group1 , y_data_group1 , test_size=0.2, random_state=128)
-# X_train_group2, X_test_group2, y_train_group2, y_test_group2 = train_test_split(
-#     X_data_group2 , y_data_group2 , test_size=0.2, random_state=128)
-# X_train_group3, X_test_group3, y_train_group3, y_test_group3 = train_test_split(
-#     X_data_group3 , y_data_group3 , test_size=0.3, random_state=128)
+X_train_group2, X_test_group2, y_train_group2, y_test_group2 = train_test_split(
+    X_data_group2 , y_data_group2 , test_size=0.2, random_state=128)
+X_train_group3, X_test_group3, y_train_group3, y_test_group3 = train_test_split(
+    X_data_group3 , y_data_group3 , test_size=0.3, random_state=128)
 
 
 model.fit(X_train_group1, y_train_group1)
-y_pred_group1 += model.predict(test_feature_group1)
+prediction_group1 = model.predict(test_feature_group1)
 
-# model.fit(X_train_group2, y_train_group2)
-# y_pred_group2 += model.predict(test_feature_group2)
+model.fit(X_train_group2, y_train_group2)
+prediction_group2 = model.predict(test_feature_group2)
 
-# model.fit(X_train_group3, y_train_group3)
-# y_pred_group3 += model.predict(test_feature_group3)
+model.fit(X_train_group3, y_train_group3)
+prediction_group3 = model.predict(test_feature_group3)
+
+index_df_group1['scalar_coupling_constant'] = prediction_group1
+index_df_group1.to_csv("index_df_group1.csv")
+index_df_group2['scalar_coupling_constant'] = prediction_group2
+index_df_group2.to_csv("index_df_group2.csv")
+index_df_group3['scalar_coupling_constant'] = prediction_group3
+index_df_group3.to_csv("index_df_group3.csv")
+
 
 #%%
-np.savetxt('out_group1.csv',y_pred_group1,delimiter=',')
-np.savetxt('out_group2.csv',y_pred_group2,delimiter=',')
-np.savetxt('out_group3.csv',y_pred_group3,delimiter=',')
+np.savetxt('out_group1.csv',prediction_group1,delimiter=',')
+# np.savetxt('out_group2.csv',prediction_group2,delimiter=',')
+# np.savetxt('out_group3.csv',prediction_group3,delimiter=',')
 
 #%%
 # def train_and_predict_for_one_coupling_type(coupling_type, submission, n_atoms):
@@ -376,5 +385,9 @@ Missing_table(train_df_group3)
 train_df_group3.fillna(0,inplace=True)
 #%%
 index_df_group1
+
+
+#%%
+index_df_group1 = get_index(test_csv, "1JHN")
 
 #%%
