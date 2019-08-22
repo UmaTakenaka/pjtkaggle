@@ -42,11 +42,11 @@ train_dtypes = {
     'type': 'category',
     'scalar_coupling_constant': 'float32'
 }
-train_csv = pd.read_csv(f'C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/train.csv', index_col='id', dtype=train_dtypes)
+train_csv = pd.read_csv(f'C:/KaggleFiles/champs-scalar-coupling/train.csv', index_col='id', dtype=train_dtypes)
 train_csv['molecule_index'] = train_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 train_csv = train_csv[['molecule_index', 'atom_index_0', 'atom_index_1', 'type', 'scalar_coupling_constant']]
 
-test_csv = pd.read_csv(f'C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/test.csv', index_col='id', dtype=train_dtypes)
+test_csv = pd.read_csv(f'C:/KaggleFiles/champs-scalar-coupling/test.csv', index_col='id', dtype=train_dtypes)
 test_csv['molecule_index'] = test_csv['molecule_name'].str.replace('dsgdb9nsd_', '').astype('int32')
 test_csv = test_csv[['molecule_index', 'atom_index_0', 'atom_index_1', 'type']]
 
@@ -58,7 +58,7 @@ structures_dtypes = {
     'y': 'float32',
     'z': 'float32'
 }
-structures_csv = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
+structures_csv = pd.read_csv("C:/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
 structures_csv['molecule_index'] = structures_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 structures_csv = structures_csv[['molecule_index', 'atom_index', 'atom', 'x', 'y', 'z']]
 structures_csv['atom'] = structures_csv['atom'].replace(ATOMIC_NUMBERS).astype('int8')
