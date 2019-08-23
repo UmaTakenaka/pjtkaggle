@@ -204,6 +204,7 @@ train_df6 = build_x_y_data(train_csv, "3JHC", 9)
 train_df7 = build_x_y_data(train_csv, "3JHH", 10)
 train_df8 = build_x_y_data(train_csv, "3JHN", 10)
 # train_df_group3 = pd.concat([train_df3,train_df5,train_df6,train_df7,train_df8])
+train_df = pd.concat([train_df_group1, train_df_group2, train_df3,train_df_group4, train_df5,train_df6,train_df7,train_df8])
 
 test_df_group1 = build_x_y_data(test_csv, "1JHN", 7)
 index_df_group1 = get_index(test_csv, "1JHN")
@@ -223,9 +224,8 @@ index_df7 = get_index(test_csv, "3JHH")
 test_df8 = build_x_y_data(test_csv, "3JHN", 10)
 index_df8 = get_index(test_csv, "3JHN")
 
-test_df_group3 = pd.concat([test_df3,test_df5,test_df6,test_df7,test_df8])
-index_df_group3 = pd.concat([index_df3,index_df5,index_df6,index_df7,index_df8])
-
+test_df = pd.concat([test_df_group1, test_df_group2, test_df3,test_df_group4, test_df5,test_df6,test_df7,test_df8])
+index_df = pd.concat([index_df_group1, index_df_group2, index_df3,index_df_group4, index_df5,index_df6,index_df7,index_df8])
 # train_df_group2 = train_df_group2[train_df_group2.scalar_coupling_constant < 180]
 
 #%%
@@ -273,9 +273,13 @@ test_df_group1.drop('Unnamed: 0', axis=1)
 # y_data_group3 = train_df_group3['scalar_coupling_constant'].values.astype('float32')
 # test_feature_group3 = test_df_group3
 
-X_data_group4 = train_df_group4.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
-y_data_group4 = train_df_group4['scalar_coupling_constant'].values.astype('float32')
-test_feature_group4 = test_df_group4
+# X_data_group4 = train_df_group4.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
+# y_data_group4 = train_df_group4['scalar_coupling_constant'].values.astype('float32')
+# test_feature_group4 = test_df_group4
+
+X_data = train_df.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
+y_data = train_df['scalar_coupling_constant'].values.astype('float32')
+test_feature = test_df
 
 #%%
 # params = {'n_estimators'  : [100], 'n_jobs': [-1]}
@@ -303,14 +307,17 @@ LGB_PARAMS = {
 model2 = lgb.LGBMRegressor(**LGB_PARAMS, n_estimators=20000, n_jobs = -1)
 
 
-X_train_group1, X_test_group1, y_train_group1, y_test_group1 = train_test_split(
-    X_data_group1 , y_data_group1 , test_size=0.2, random_state=128)
-X_train_group2, X_test_group2, y_train_group2, y_test_group2 = train_test_split(
-    X_data_group2 , y_data_group2 , test_size=0.2, random_state=128)
-X_train_group3, X_test_group3, y_train_group3, y_test_group3 = train_test_split(
-    X_data_group3 , y_data_group3 , test_size=0.2, random_state=128)
-X_train_group4, X_test_group4, y_train_group4, y_test_group4 = train_test_split(
-    X_data_group4 , y_data_group4 , test_size=0.2, random_state=128)
+# X_train_group1, X_test_group1, y_train_group1, y_test_group1 = train_test_split(
+#     X_data_group1 , y_data_group1 , test_size=0.2, random_state=128)
+# X_train_group2, X_test_group2, y_train_group2, y_test_group2 = train_test_split(
+#     X_data_group2 , y_data_group2 , test_size=0.2, random_state=128)
+# X_train_group3, X_test_group3, y_train_group3, y_test_group3 = train_test_split(
+#     X_data_group3 , y_data_group3 , test_size=0.2, random_state=128)
+# X_train_group4, X_test_group4, y_train_group4, y_test_group4 = train_test_split(
+#     X_data_group4 , y_data_group4 , test_size=0.2, random_state=128)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_data , y_data , test_size=0.2, random_state=128)   
 
 # print('Start Fitting')
 # model2.fit(X_train_group1, y_train_group1, 
@@ -333,12 +340,19 @@ X_train_group4, X_test_group4, y_train_group4, y_test_group4 = train_test_split(
 # print('Start Predicting')
 # prediction_lgb_group3 = model2.predict(test_feature_group3)
 
+# print('Start Fitting')
+# model2.fit(X_train_group4, y_train_group4, 
+#         eval_set=[(X_train_group4, y_train_group4), (X_test_group4, y_test_group4)], eval_metric='mae',
+#         verbose=500, early_stopping_rounds=100)
+# print('Start Predicting')
+# prediction_lgb_group4 = model2.predict(test_feature_group4)
+
 print('Start Fitting')
-model2.fit(X_train_group4, y_train_group4, 
-        eval_set=[(X_train_group4, y_train_group4), (X_test_group4, y_test_group4)], eval_metric='mae',
+model2.fit(X_train, y_train, 
+        eval_set=[(X_train, y_train), (X_test, y_test)], eval_metric='mae',
         verbose=500, early_stopping_rounds=100)
 print('Start Predicting')
-prediction_lgb_group4 = model2.predict(test_feature_group4)
+prediction_lgb = model2.predict(test_feature)
 
 # print('Start Predicting')
 # prediction_group2 = model.predict(test_feature_group2)
@@ -349,8 +363,12 @@ prediction_lgb_group4 = model2.predict(test_feature_group4)
 # index_df_group2.to_csv("index_df_group2_lgb.csv")
 # index_df_group3['scalar_coupling_constant'] = prediction_lgb_group3
 # index_df_group3.to_csv("index_df_group3_lgb.csv")
-index_df_group4['scalar_coupling_constant'] = prediction_lgb_group4
-index_df_group4.to_csv("index_df_group4_lgb.csv")
+# index_df_group4['scalar_coupling_constant'] = prediction_lgb_group4
+# index_df_group4.to_csv("index_df_group4_lgb.csv")
+
+index_df['scalar_coupling_constant'] = prediction_lgb
+index_df.to_csv("index_df_lgb.csv", index_label = ["id"])
+
 
 #%%
 index_df_group4
@@ -362,7 +380,7 @@ index_df_group3 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-
 # index_df_group4 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group4_lgb.csv', index_col='id')
 
 #%%
-submission = pd.concat([index_df_group1, index_df_group2_2,index_df_group3]).sort_values(by=["id"], ascending=True)
+# submission = pd.concat([index_df_group1, index_df_group2_2,index_df_group3]).sort_values(by=["id"], ascending=True)
 
 sub = submission.drop('Unnamed: 0', axis=1)
 sub.to_csv('submission.csv', index_label = ["id"])
