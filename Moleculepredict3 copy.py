@@ -195,42 +195,38 @@ def build_x_y_data(some_csv, coupling_type, n_atoms):
     return df
 
 #%%
-# train_df_group1 = build_x_y_data(train_csv, "1JHN", 7)
-# train_df_group2 = build_x_y_data(train_csv, "1JHC", 10)
-# train_df3 = build_x_y_data(train_csv, "2JHC", 9)
+train_df_group1 = build_x_y_data(train_csv, "1JHN", 7)
+train_df_group2 = build_x_y_data(train_csv, "1JHC", 10)
+train_df3 = build_x_y_data(train_csv, "2JHC", 9)
 train_df_group4 = build_x_y_data(train_csv, "2JHH", 9)
-# train_df5 = build_x_y_data(train_csv, "2JHN", 9)
-# train_df6 = build_x_y_data(train_csv, "3JHC", 9)
-# train_df7 = build_x_y_data(train_csv, "3JHH", 10)
-# train_df8 = build_x_y_data(train_csv, "3JHN", 10)
+train_df5 = build_x_y_data(train_csv, "2JHN", 9)
+train_df6 = build_x_y_data(train_csv, "3JHC", 9)
+train_df7 = build_x_y_data(train_csv, "3JHH", 10)
+train_df8 = build_x_y_data(train_csv, "3JHN", 10)
 # train_df_group3 = pd.concat([train_df3,train_df5,train_df6,train_df7,train_df8])
 
-# test_df_group1 = build_x_y_data(test_csv, "1JHN", 7)
-# index_df_group1 = get_index(test_csv, "1JHN")
-# test_df_group2 = build_x_y_data(test_csv, "1JHC", 10)
-# index_df_group2 = get_index(test_csv, "1JHC")
+test_df_group1 = build_x_y_data(test_csv, "1JHN", 7)
+index_df_group1 = get_index(test_csv, "1JHN")
+test_df_group2 = build_x_y_data(test_csv, "1JHC", 10)
+index_df_group2 = get_index(test_csv, "1JHC")
 test_df_group4 = build_x_y_data(test_csv, "2JHH", 9)
 index_df_group4 = get_index(test_csv, "2JHH")
 
-# test_df3 = build_x_y_data(test_csv, "2JHC", 9)
-# index_df3 = get_index(test_csv, "2JHC")
-# test_df5 = build_x_y_data(test_csv, "2JHN", 9)
-# index_df5 = get_index(test_csv, "2JHN")
-# test_df6 = build_x_y_data(test_csv, "3JHC", 9)
-# index_df6 = get_index(test_csv, "3JHC")
-# test_df7 = build_x_y_data(test_csv, "3JHH", 10)
-# index_df7 = get_index(test_csv, "3JHH")
-# test_df8 = build_x_y_data(test_csv, "3JHN", 10)
-# index_df8 = get_index(test_csv, "3JHN")
+test_df3 = build_x_y_data(test_csv, "2JHC", 9)
+index_df3 = get_index(test_csv, "2JHC")
+test_df5 = build_x_y_data(test_csv, "2JHN", 9)
+index_df5 = get_index(test_csv, "2JHN")
+test_df6 = build_x_y_data(test_csv, "3JHC", 9)
+index_df6 = get_index(test_csv, "3JHC")
+test_df7 = build_x_y_data(test_csv, "3JHH", 10)
+index_df7 = get_index(test_csv, "3JHH")
+test_df8 = build_x_y_data(test_csv, "3JHN", 10)
+index_df8 = get_index(test_csv, "3JHN")
 
-# test_df_group3 = pd.concat([test_df3,test_df5,test_df6,test_df7,test_df8])
-# index_df_group3 = pd.concat([index_df3,index_df5,index_df6,index_df7,index_df8])
+test_df_group3 = pd.concat([test_df3,test_df5,test_df6,test_df7,test_df8])
+index_df_group3 = pd.concat([index_df3,index_df5,index_df6,index_df7,index_df8])
 
 # train_df_group2 = train_df_group2[train_df_group2.scalar_coupling_constant < 180]
-
-#%%
-# train_df_group4.head()
-test_df_group4.head()
 
 #%%
 # train_df_group1.to_csv("/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/train_group1.csv")
@@ -362,18 +358,17 @@ index_df_group4
 #%%
 index_df_group1 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group1_lgb.csv', index_col='id')
 index_df_group2 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group2.csv', index_col='id')
-index_df_group3 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group3_lgb.csv', index_col='id')
-index_df_group4 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group4_lgb.csv', index_col='id')
+index_df_group3 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group3.csv', index_col='id')
+# index_df_group4 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group4_lgb.csv', index_col='id')
 
 #%%
-submission = pd.concat([index_df_group1, index_df_group2,index_df_group3,index_df_group4]).sort_values(by=["id"], ascending=True)
+submission = pd.concat([index_df_group1, index_df_group2_2,index_df_group3]).sort_values(by=["id"], ascending=True)
 
 sub = submission.drop('Unnamed: 0', axis=1)
 sub.to_csv('submission.csv', index_label = ["id"])
 
 #%%
-index_df_group2_2 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group2_lgb.csv', index_col='id')
-
+sub
 
 #%%
 plt.hist(index_df_group2_2["scalar_coupling_constant"],bins=100)
