@@ -282,6 +282,9 @@ y_data = train_df['scalar_coupling_constant'].values.astype('float32')
 test_feature = test_df
 
 #%%
+test_df
+
+#%%
 # params = {'n_estimators'  : [100], 'n_jobs': [-1]}
 # forest = RandomForestRegressor()
 # model = GridSearchCV(forest, params, cv = 5)
@@ -304,7 +307,7 @@ LGB_PARAMS = {
     'colsample_bytree': 1.0
 }
 
-model2 = lgb.LGBMRegressor(**LGB_PARAMS, n_estimators=20000, n_jobs = -1)
+model2 = lgb.LGBMRegressor(**LGB_PARAMS, n_estimators=15000, n_jobs = -1)
 
 
 # X_train_group1, X_test_group1, y_train_group1, y_test_group1 = train_test_split(
@@ -366,9 +369,14 @@ prediction_lgb = model2.predict(test_feature)
 # index_df_group4['scalar_coupling_constant'] = prediction_lgb_group4
 # index_df_group4.to_csv("index_df_group4_lgb.csv")
 
-index_df['scalar_coupling_constant'] = prediction_lgb
-index_df.to_csv("index_df_lgb.csv", index_label = ["id"])
 
+index_df['scalar_coupling_constant'] = prediction_lgb
+
+#%%
+index_df.to_csv("index_df_lgb.csv")
+
+#%%
+index_df
 
 #%%
 index_df_group4
@@ -380,16 +388,21 @@ index_df_group3 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-
 # index_df_group4 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group4_lgb.csv', index_col='id')
 
 #%%
+index_df_group1 = pd.read_csv('index_df_lgb.csv', index_col='id')
+
+#%%
+index_df_group1
+#%%
 # submission = pd.concat([index_df_group1, index_df_group2_2,index_df_group3]).sort_values(by=["id"], ascending=True)
 
-sub = submission.drop('Unnamed: 0', axis=1)
+sub = index_df_group1.drop('Unnamed: 0', axis=1)
 sub.to_csv('submission.csv', index_label = ["id"])
 
 #%%
 sub
 
 #%%
-plt.hist(index_df_group2_2["scalar_coupling_constant"],bins=100)
+plt.hist(index_df["scalar_coupling_constant"],bins=100)
 
 
 #%%
