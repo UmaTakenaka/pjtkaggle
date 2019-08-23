@@ -191,7 +191,9 @@ def build_x_y_data(some_csv, coupling_type, n_atoms, data_type):
     df = df.fillna(0)
     print(df.columns)
 
-    csv_title = data_type + '_' + coupling_type
+    get_index(some_csv, coupling_type)
+
+    csv_title = '/DataSet' + data_type + '_' + coupling_type
     df.to_csv(csv_title)
 
     return df
@@ -234,6 +236,8 @@ def try_fit_predict(train_df, test_df, index_df, savename):
     csv_title = 'result_' + savename + '.csv'
     index_df.to_csv(csv_title)
 
+    return prediction_lgb
+
 #%%
 model_params = {
     '1JHN': 7,
@@ -247,8 +251,8 @@ model_params = {
 }
 
 for coupling_type in model_params.keys():
-    train = build_x_y_data(train_csv, coupling_type,n_atoms=model_params[coupling_type], 'train')
-    test = build_x_y_data(test_csv, coupling_type,n_atoms=model_params[coupling_type], 'test')
+    train = build_x_y_data(train_csv, coupling_type,n_atoms=model_params[coupling_type], data_type="train")
+    test = build_x_y_data(test_csv, coupling_type,n_atoms=model_params[coupling_type], data_type="test")
 
 #%%
 build_x_y_data(train_csv, "1JHN" ,7)
