@@ -361,7 +361,7 @@ index_df_group4
 
 #%%
 index_df_group1 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group1_lgb.csv', index_col='id')
-index_df_group2 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group2_lgb.csv', index_col='id')
+index_df_group2 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group2.csv', index_col='id')
 index_df_group3 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group3_lgb.csv', index_col='id')
 index_df_group4 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group4_lgb.csv', index_col='id')
 
@@ -371,9 +371,14 @@ submission = pd.concat([index_df_group1, index_df_group2,index_df_group3,index_d
 sub = submission.drop('Unnamed: 0', axis=1)
 sub.to_csv('submission.csv', index_label = ["id"])
 
+#%%
+index_df_group2_2 = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/index_df_group2_lgb.csv', index_col='id')
+
 
 #%%
-sub
+plt.hist(index_df_group2_2["scalar_coupling_constant"],bins=100)
+
+
 #%%
 # np.savetxt('out_group1.csv',prediction_group1,delimiter=',')
 # np.savetxt('out_group2.csv',prediction_group2,delimiter=',')
