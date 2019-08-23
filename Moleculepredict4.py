@@ -27,11 +27,11 @@ import lightgbm as lgb
 
 #%%
 ATOMIC_NUMBERS = {
-    'H': 1,
-    'C': 6,
-    'N': 7,
-    'O': 8,
-    'F': 9
+    'H': 37,
+    'C': 77,
+    'N': 75,
+    'O': 73,
+    'F': 71
 }
 
 train_dtypes = {
@@ -60,7 +60,7 @@ structures_dtypes = {
 structures_csv = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
 structures_csv['molecule_index'] = structures_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 structures_csv = structures_csv[['molecule_index', 'atom_index', 'atom', 'x', 'y', 'z']]
-structures_csv['atom'] = structures_csv['atom'].replace(ATOMIC_NUMBERS).astype('int8')
+structures_csv['atom'] = structures_csv['atom'].replace(ATOMIC_NUMBERS).astype('float32')
 
 # submission_csv = pd.read_csv("C:/KaggleFiles/champs-scalar-coupling//sample_submission.csv", index_col='id')
 
@@ -184,12 +184,15 @@ def take_n_atoms(df, n_atoms, four_start=4):
         labels.append('scalar_coupling_constant')
     return df[labels]
 
-def build_x_y_data(some_csv, coupling_type, n_atoms):
+def build_x_y_data(some_csv, coupling_type, n_atoms, data_type):
     full = build_couple_dataframe(some_csv, structures_csv, coupling_type, n_atoms=n_atoms)
     
     df = take_n_atoms(full, n_atoms)
     df = df.fillna(0)
     print(df.columns)
+
+    csv_title = data_type + '_' + coupling_type
+    df.to_csv(csv_title)
 
     return df
 
@@ -218,19 +221,37 @@ def try_fit_predict(train_df, test_df, index_df, savename):
     'colsample_bytree': 1.0
     }
 
-    model2 = lgb.LGBMRegressor(**LGB_PARAMS, n_estimators=15000, n_jobs = -1)
+    model2 = lgb.LGBMRegressor(**LGB_PARAMS, n_estimators=1000, n_jobs = -1)
 
     print('Start Fitting')
     model2.fit(X_train, y_train, 
         eval_set=[(X_train, y_train), (X_test, y_test)], eval_metric='mae',
-        verbose=500, early_stopping_rounds=100)
+        verbose=200, early_stopping_rounds=100)
     print('Start Predicting')
     prediction_lgb = model2.predict(test_feature)
 
     index_df['scalar_coupling_constant'] = prediction_lgb
-    csv_title = 'result' + savename + '.csv'
-    index_df.to_csv(csv_titele)
+    csv_title = 'result_' + savename + '.csv'
+    index_df.to_csv(csv_title)
 
+#%%
+model_params = {
+    '1JHN': 7,
+    '1JHC': 10,
+    '2JHH': 9,
+    '2JHN': 9,
+    '2JHC': 9,
+    '3JHH': 9,
+    '3JHC': 10,
+    '3JHN': 10
+}
+
+for coupling_type in model_params.keys():
+    train = build_x_y_data(train_csv, coupling_type,n_atoms=model_params[coupling_type], 'train')
+    test = build_x_y_data(test_csv, coupling_type,n_atoms=model_params[coupling_type], 'test')
+
+#%%
+build_x_y_data(train_csv, "1JHN" ,7)
 
 #%%
 train_df_group1 = build_x_y_data(train_csv, "1JHN", 7)
