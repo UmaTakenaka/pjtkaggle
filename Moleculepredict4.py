@@ -35,7 +35,7 @@ ATOMIC_NUMBERS = {
     'N': 0.75,
     'O': 0.73,
     'F': 0.71
-}
+ }
 
 train_dtypes = {
     'molecule_name': 'category',
@@ -60,7 +60,7 @@ structures_dtypes = {
     'y': 'float32',
     'z': 'float32'
 }
-structures_csv = pd.read_csv("/C:/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
+structures_csv = pd.read_csv("C:/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
 structures_csv['molecule_index'] = structures_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 structures_csv = structures_csv[['molecule_index', 'atom_index', 'atom', 'x', 'y', 'z']]
 structures_csv['atom'] = structures_csv['atom'].replace(ATOMIC_NUMBERS).astype('float32')
@@ -231,7 +231,7 @@ def try_fit_predict_lgbm(train_df, test_df, index_df, savename):
     print('Start Fitting')
     model2.fit(X_train, y_train, 
         eval_set=[(X_train, y_train), (X_test, y_test)], eval_metric='mae',
-        verbose=200, early_stopping_rounds=1000)
+        verbose=200, early_stopping_rounds=100)
     print('Start Getting Mae')
     prediction_rf_mae =  model2.predict(X_test)
     Err = mae(y_test, prediction_rf_mae)
