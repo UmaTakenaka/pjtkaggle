@@ -10,10 +10,13 @@ from sklearn.model_selection import GroupKFold, train_test_split
 from sklearn.metrics import mean_absolute_error
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import mean_absolute_error as mae
 
 import matplotlib.pyplot as plt
 
 import lightgbm as lgb
+
+acc_dic = {}
 # import seaborn as sns
 
 # from lightgbm import LGBMRegressor
@@ -27,11 +30,11 @@ import lightgbm as lgb
 
 #%%
 ATOMIC_NUMBERS = {
-    'H': 37,
-    'C': 77,
-    'N': 75,
-    'O': 73,
-    'F': 71
+    'H': 0.37,
+    'C': 0.77,
+    'N': 0.75,
+    'O': 0.73,
+    'F': 0.71
 }
 
 train_dtypes = {
@@ -41,11 +44,11 @@ train_dtypes = {
     'type': 'category',
     'scalar_coupling_constant': 'float32'
 }
-train_csv = pd.read_csv(f'C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/train.csv', index_col='id', dtype=train_dtypes)
+train_csv = pd.read_csv(f'C:/KaggleFiles/champs-scalar-coupling/train.csv', index_col='id', dtype=train_dtypes)
 train_csv['molecule_index'] = train_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 train_csv = train_csv[['molecule_index', 'atom_index_0', 'atom_index_1', 'type', 'scalar_coupling_constant']]
 
-test_csv = pd.read_csv(f'C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/test.csv', index_col='id', dtype=train_dtypes)
+test_csv = pd.read_csv(f'C:/KaggleFiles/champs-scalar-coupling/test.csv', index_col='id', dtype=train_dtypes)
 test_csv['molecule_index'] = test_csv['molecule_name'].str.replace('dsgdb9nsd_', '').astype('int32')
 test_csv = test_csv[['molecule_index', 'atom_index_0', 'atom_index_1', 'type']]
 
@@ -57,7 +60,7 @@ structures_dtypes = {
     'y': 'float32',
     'z': 'float32'
 }
-structures_csv = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
+structures_csv = pd.read_csv("/C:/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
 structures_csv['molecule_index'] = structures_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 structures_csv = structures_csv[['molecule_index', 'atom_index', 'atom', 'x', 'y', 'z']]
 structures_csv['atom'] = structures_csv['atom'].replace(ATOMIC_NUMBERS).astype('float32')
@@ -159,7 +162,7 @@ def build_couple_dataframe(some_csv, structures_csv, coupling_type, n_atoms=10):
     # downcast back to int8
     for col in atoms.columns:
         if col.startswith('atom_'):
-            atoms[col] = atoms[col].fillna(0).astype('int8')
+            atoms[col] = atoms[col].fillna(0).astype('float32')
             
     atoms['molecule_index'] = atoms['molecule_index'].astype('int32')
     
@@ -184,21 +187,21 @@ def take_n_atoms(df, n_atoms, four_start=4):
         labels.append('scalar_coupling_constant')
     return df[labels]
 
-def build_x_y_data(some_csv, coupling_type, n_atoms, data_type):
+def build_x_y_data(some_csv, coupling_type, n_atoms):
     full = build_couple_dataframe(some_csv, structures_csv, coupling_type, n_atoms=n_atoms)
     
     df = take_n_atoms(full, n_atoms)
     df = df.fillna(0)
     print(df.columns)
 
-    get_index(some_csv, coupling_type)
+    # get_index(some_csv, coupling_type)
 
-    csv_title = '/DataSet' + data_type + '_' + coupling_type
-    df.to_csv(csv_title)
+    # csv_title = '/DataSet' + data_type + '_' + coupling_type
+    # df.to_csv(csv_title)
 
     return df
 
-def try_fit_predict(train_df, test_df, index_df, savename):
+def try_fit_predict_lgbm(train_df, test_df, index_df, savename):
     X_data = train_df.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
     y_data = train_df['scalar_coupling_constant'].values.astype('float32')
     test_feature = test_df
@@ -223,12 +226,16 @@ def try_fit_predict(train_df, test_df, index_df, savename):
     'colsample_bytree': 1.0
     }
 
-    model2 = lgb.LGBMRegressor(**LGB_PARAMS, n_estimators=1000, n_jobs = -1)
+    model2 = lgb.LGBMRegressor(**LGB_PARAMS, n_estimators=50000, n_jobs = -1)
 
     print('Start Fitting')
     model2.fit(X_train, y_train, 
         eval_set=[(X_train, y_train), (X_test, y_test)], eval_metric='mae',
-        verbose=200, early_stopping_rounds=100)
+        verbose=200, early_stopping_rounds=1000)
+    print('Start Getting Mae')
+    prediction_rf_mae =  model2.predict(X_test)
+    Err = mae(y_test, prediction_rf_mae)
+    acc_dic[savename] = Err
     print('Start Predicting')
     prediction_lgb = model2.predict(test_feature)
 
@@ -238,46 +245,71 @@ def try_fit_predict(train_df, test_df, index_df, savename):
 
     return prediction_lgb
 
-#%%
-model_params = {
-    '1JHN': 7,
-    '1JHC': 10,
-    '2JHH': 9,
-    '2JHN': 9,
-    '2JHC': 9,
-    '3JHH': 9,
-    '3JHC': 10,
-    '3JHN': 10
-}
+def try_fit_predict_RandomForest(train_df, test_df, index_df, savename):
+    X_data = train_df.drop(['scalar_coupling_constant'], axis=1).values.astype('float32')
+    y_data = train_df['scalar_coupling_constant'].values.astype('float32')
+    test_feature = test_df
 
-for coupling_type in model_params.keys():
-    train = build_x_y_data(train_csv, coupling_type,n_atoms=model_params[coupling_type], data_type="train")
-    test = build_x_y_data(test_csv, coupling_type,n_atoms=model_params[coupling_type], data_type="test")
+    X_train, X_test, y_train, y_test = train_test_split(X_data , y_data , test_size=0.2, random_state=128)
+
+    # LGBMRegressorによる予測
+
+    params = {'n_estimators'  : [1000], 'n_jobs': [-1]}
+    forest = RandomForestRegressor()
+    model = GridSearchCV(forest, params, cv = 5)
+
+    print('Start Fitting')
+    model.fit(X_train, y_train)
+    print('Start Getting Mae')
+    prediction_rf_mae =  model.predict(X_test)
+    Err = mae(y_test, prediction_rf_mae)
+    acc_dic[savename] = Err
+    print('Start Predicting')
+    prediction_rf =  model.predict(test_feature)
+
+    index_df['scalar_coupling_constant'] = prediction_rf
+    csv_title = 'result_' + savename + '.csv'
+    index_df.to_csv(csv_title)
+
+    return prediction_rf
 
 #%%
-build_x_y_data(train_csv, "1JHN" ,7)
+# model_params = {
+#     '1JHN': 7,
+#     '1JHC': 10,
+#     '2JHH': 9,
+#     '2JHN': 9,
+#     '2JHC': 9,
+#     '3JHH': 9,
+#     '3JHC': 10,
+#     '3JHN': 10
+# }
+
+# for coupling_type in model_params.keys():
+#     train = build_x_y_data(train_csv, coupling_type,n_atoms=model_params[coupling_type], data_type="train")
+#     test = build_x_y_data(test_csv, coupling_type,n_atoms=model_params[coupling_type], data_type="test")
+
 
 #%%
-train_df_group1 = build_x_y_data(train_csv, "1JHN", 7)
-train_df_group2 = build_x_y_data(train_csv, "1JHC", 10)
+train_df1 = build_x_y_data(train_csv, "1JHN", 7)
+train_df2 = build_x_y_data(train_csv, "1JHC", 10)
 train_df3 = build_x_y_data(train_csv, "2JHC", 9)
-train_df_group4 = build_x_y_data(train_csv, "2JHH", 9)
+train_df4 = build_x_y_data(train_csv, "2JHH", 9)
 train_df5 = build_x_y_data(train_csv, "2JHN", 9)
 train_df6 = build_x_y_data(train_csv, "3JHC", 9)
 train_df7 = build_x_y_data(train_csv, "3JHH", 10)
 train_df8 = build_x_y_data(train_csv, "3JHN", 10)
 # train_df_group3 = pd.concat([train_df3,train_df5,train_df6,train_df7,train_df8])
-train_df = pd.concat([train_df_group1, train_df_group2, train_df3,train_df_group4, train_df5,train_df6,train_df7,train_df8])
+# train_df = pd.concat([train_df_group1, train_df_group2, train_df3,train_df_group4, train_df5,train_df6,train_df7,train_df8])
 
-test_df_group1 = build_x_y_data(test_csv, "1JHN", 7)
-index_df_group1 = get_index(test_csv, "1JHN")
-test_df_group2 = build_x_y_data(test_csv, "1JHC", 10)
-index_df_group2 = get_index(test_csv, "1JHC")
-test_df_group4 = build_x_y_data(test_csv, "2JHH", 9)
-index_df_group4 = get_index(test_csv, "2JHH")
-
+test_df1 = build_x_y_data(test_csv, "1JHN", 7)
+index_df1 = get_index(test_csv, "1JHN")
+test_df2 = build_x_y_data(test_csv, "1JHC", 10)
+index_df2 = get_index(test_csv, "1JHC")
 test_df3 = build_x_y_data(test_csv, "2JHC", 9)
 index_df3 = get_index(test_csv, "2JHC")
+test_df4 = build_x_y_data(test_csv, "2JHH", 9)
+index_df4 = get_index(test_csv, "2JHH")
 test_df5 = build_x_y_data(test_csv, "2JHN", 9)
 index_df5 = get_index(test_csv, "2JHN")
 test_df6 = build_x_y_data(test_csv, "3JHC", 9)
@@ -287,15 +319,28 @@ index_df7 = get_index(test_csv, "3JHH")
 test_df8 = build_x_y_data(test_csv, "3JHN", 10)
 index_df8 = get_index(test_csv, "3JHN")
 
-test_df = pd.concat([test_df_group1, test_df_group2, test_df3,test_df_group4, test_df5,test_df6,test_df7,test_df8])
-index_df = pd.concat([index_df_group1, index_df_group2, index_df3,index_df_group4, index_df5,index_df6,index_df7,index_df8])
+# test_df = pd.concat([test_df_group1, test_df_group2, test_df3,test_df_group4, test_df5,test_df6,test_df7,test_df8])
+# index_df = pd.concat([index_df_group1, index_df_group2, index_df3,index_df_group4, index_df5,index_df6,index_df7,index_df8])
 # train_df_group2 = train_df_group2[train_df_group2.scalar_coupling_constant < 180]
 
 #%%
-try_fit_predict(train_df_group1,test_df_group1,index_df_group1,"group1")
+try_fit_predict_lgbm(train_df1,test_df1,index_df1,"1JHN")
+try_fit_predict_RandomForest(train_df2,test_df2,index_df2,"1JHC")
+try_fit_predict_RandomForest(train_df3,test_df3,index_df3,"2JHC")
+try_fit_predict_RandomForest(train_df4,test_df4,index_df4,"2JHH")
+try_fit_predict_RandomForest(train_df5,test_df5,index_df5,"2JHN")
+try_fit_predict_RandomForest(train_df6,test_df6,index_df6,"3JHC")
+try_fit_predict_RandomForest(train_df7,test_df7,index_df7,"3JHH")
+try_fit_predict_RandomForest(train_df8,test_df8,index_df8,"3JHN")
 
 #%%
-
+# 各モデルの訓練データに対する精度をDataFrame化
+Acc = pd.DataFrame([], columns=acc_dic.keys())
+dict_array = []
+for i in acc_dic.items():
+        dict_array.append(acc_dic)
+Acc = pd.concat([Acc, pd.DataFrame.from_dict(dict_array)]).T
+Acc[0]
 
 #%%
 train_df_group3
@@ -567,3 +612,10 @@ train_df_group3.fillna(0, inplace=True)
 # test_df_group2 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_group2.csv')
 # test_df_group3 = pd.read_csv(f'/Users/yumatakenaka/KaggleFiles/champs-scalar-coupling/test_group3.csv')
 test_df_group3.fillna(0, inplace=True)
+#%%
+structures_csv
+
+#%%
+add_coordinates(train_csv, structures_csv, 0)
+
+#%%
