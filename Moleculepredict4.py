@@ -343,6 +343,25 @@ Acc = pd.concat([Acc, pd.DataFrame.from_dict(dict_array)]).T
 Acc[0]
 
 #%%
+result_1JHC = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/result_1JHC.csv', index_col='id')
+result_1JHN = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/result_1JHN.csv', index_col='id')
+result_2JHC = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/result_2JHC.csv', index_col='id')
+result_2JHN = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/result_2JHN.csv', index_col='id')
+result_2JHH = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/result_2JHH.csv', index_col='id')
+result_3JHC = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/result_3JHC.csv', index_col='id')
+result_3JHN = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/result_3JHN.csv', index_col='id')
+result_3JHH = pd.read_csv('C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/result_3JHH.csv', index_col='id')
+result = pd.concat([result_1JHC,result_1JHN,result_2JHC,result_2JHN,result_2JHH,result_3JHC,result_3JHN,result_3JHH])
+
+submission = result.sort_values('id').drop('Unnamed: 0', axis=1)
+
+#%%
+submission.to_csv('result.csv')
+
+#%%
+result_1JHC
+
+#%%
 train_df3
 #%%
 train_df_group1.drop('Unnamed: 0', axis=1)
