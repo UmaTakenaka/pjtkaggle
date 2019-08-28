@@ -226,12 +226,12 @@ def try_fit_predict_lgbm(train_df, test_df, index_df, savename):
     'colsample_bytree': 1.0
     }
 
-    model2 = lgb.LGBMRegressor(**LGB_PARAMS, n_estimators=50000, n_jobs = -1)
+    model2 = lgb.LGBMRegressor(**LGB_PARAMS, n_estimators=20000, n_jobs = -1)
 
     print('Start Fitting')
     model2.fit(X_train, y_train, 
         eval_set=[(X_train, y_train), (X_test, y_test)], eval_metric='mae',
-        verbose=200, early_stopping_rounds=100)
+        verbose=500, early_stopping_rounds=1000)
     print('Start Getting Mae')
     prediction_rf_mae =  model2.predict(X_test)
     Err = mae(y_test, prediction_rf_mae)
@@ -250,13 +250,13 @@ def try_fit_predict_RandomForest(train_df, test_df, index_df, savename):
     y_data = train_df['scalar_coupling_constant'].values.astype('float32')
     test_feature = test_df
 
-    X_train, X_test, y_train, y_test = train_test_split(X_data , y_data , test_size=0.2, random_state=128)
+    X_train, X_test, y_train, y_test = train_test_split(X_data , y_data , test_size=0.33, random_state=128)
 
     # LGBMRegressorによる予測
 
-    params = {'n_estimators'  : [1000], 'n_jobs': [-1]}
+    params = {'n_estimators'  : [500], 'n_jobs': [-1]}
     forest = RandomForestRegressor()
-    model = GridSearchCV(forest, params, cv = 5)
+    model = GridSearchCV(forest, params, cv = 3)
 
     print('Start Fitting')
     model.fit(X_train, y_train)
@@ -291,8 +291,8 @@ def try_fit_predict_RandomForest(train_df, test_df, index_df, savename):
 
 
 #%%
-train_df1 = build_x_y_data(train_csv, "1JHN", 7)
-train_df2 = build_x_y_data(train_csv, "1JHC", 10)
+# train_df1 = build_x_y_data(train_csv, "1JHN", 7)
+# train_df2 = build_x_y_data(train_csv, "1JHC", 10)
 train_df3 = build_x_y_data(train_csv, "2JHC", 9)
 train_df4 = build_x_y_data(train_csv, "2JHH", 9)
 train_df5 = build_x_y_data(train_csv, "2JHN", 9)
@@ -324,8 +324,8 @@ index_df8 = get_index(test_csv, "3JHN")
 # train_df_group2 = train_df_group2[train_df_group2.scalar_coupling_constant < 180]
 
 #%%
-try_fit_predict_lgbm(train_df1,test_df1,index_df1,"1JHN")
-try_fit_predict_RandomForest(train_df2,test_df2,index_df2,"1JHC")
+# try_fit_predict_lgbm(train_df1,test_df1,index_df1,"1JHN")
+# try_fit_predict_RandomForest(train_df2,test_df2,index_df2,"1JHC")
 try_fit_predict_RandomForest(train_df3,test_df3,index_df3,"2JHC")
 try_fit_predict_RandomForest(train_df4,test_df4,index_df4,"2JHH")
 try_fit_predict_RandomForest(train_df5,test_df5,index_df5,"2JHN")
@@ -343,7 +343,7 @@ Acc = pd.concat([Acc, pd.DataFrame.from_dict(dict_array)]).T
 Acc[0]
 
 #%%
-train_df_group3
+train_df3
 #%%
 train_df_group1.drop('Unnamed: 0', axis=1)
 # train_df_group2.drop('Unnamed: 0', axis=1)
