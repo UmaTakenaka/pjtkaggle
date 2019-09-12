@@ -44,11 +44,11 @@ train_dtypes = {
     'type': 'category',
     'scalar_coupling_constant': 'float32'
 }
-train_csv = pd.read_csv(f'C:/KaggleFiles/champs-scalar-coupling/train.csv', index_col='id', dtype=train_dtypes)
+train_csv = pd.read_csv(f'C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/train.csv', index_col='id', dtype=train_dtypes)
 train_csv['molecule_index'] = train_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 train_csv = train_csv[['molecule_index', 'atom_index_0', 'atom_index_1', 'type', 'scalar_coupling_constant']]
 
-test_csv = pd.read_csv(f'C:/KaggleFiles/champs-scalar-coupling/test.csv', index_col='id', dtype=train_dtypes)
+test_csv = pd.read_csv(f'C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/test.csv', index_col='id', dtype=train_dtypes)
 test_csv['molecule_index'] = test_csv['molecule_name'].str.replace('dsgdb9nsd_', '').astype('int32')
 test_csv = test_csv[['molecule_index', 'atom_index_0', 'atom_index_1', 'type']]
 
@@ -60,12 +60,17 @@ structures_dtypes = {
     'y': 'float32',
     'z': 'float32'
 }
-structures_csv = pd.read_csv("C:/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
+structures_csv = pd.read_csv("C:/Users/takenaka.yuma/KaggleFiles/champs-scalar-coupling/structures.csv", dtype=structures_dtypes)
 structures_csv['molecule_index'] = structures_csv.molecule_name.str.replace('dsgdb9nsd_', '').astype('int32')
 structures_csv = structures_csv[['molecule_index', 'atom_index', 'atom', 'x', 'y', 'z']]
-structures_csv['atom'] = structures_csv['atom'].replace(ATOMIC_NUMBERS).astype('float32')
+structures_csv['atom'] = structures_csv['atom'].replace(ATOMIC_NUMBERS).astype('int8')
 
 # submission_csv = pd.read_csv("C:/KaggleFiles/champs-scalar-coupling//sample_submission.csv", index_col='id')
+
+#%%
+# plt.hist(index_df["scalar_coupling_constant"],bins=100)
+train_sample = train_csv.sample(frac=0.05)
+plt.scatter(train_sample["type"], train_sample["scalar_coupling_constant"])
 
 #%%
 def get_index(some_csv, coupling_type):
@@ -636,5 +641,18 @@ structures_csv
 
 #%%
 add_coordinates(train_csv, structures_csv, 0)
+
+#%%
+# サンプルからデータ型を調べる関数
+def Datatype_table(df):
+        list_type = df.dtypes #データ型
+        Datatype_table = pd.concat([list_type], axis = 1)
+        Datatype_table_len = Datatype_table.rename(columns = {0:'データ型'})
+        return Datatype_table_len
+    
+Datatype_table(train_csv)
+
+#%%
+Datatype_table(structures_csv)
 
 #%%
