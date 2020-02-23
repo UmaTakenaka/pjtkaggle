@@ -13,7 +13,7 @@ train = pd.read_csv("/Users/yumatakenaka/Data/ratings_sample.csv")
 print('Finished')
 
 # trainをランダムサンプリング
-train = train.sample(frac=0.01)
+# train = train.sample(frac=0.01)
 # カラムをカテゴリ変数化
 userId_categorical = pd.api.types.CategoricalDtype(categories=sorted(train.userId.unique()), ordered=True)
 movieId_categorical = pd.api.types.CategoricalDtype(categories=sorted(train.movieId.unique()), ordered=True)
@@ -33,7 +33,7 @@ model_knn = knn.fit(train_pivot)
 
 # %%
 def movie_prediction(movie):
-    distance, indice = model_knn.kneighbors(train_pivot.iloc[train_pivot.index== movie].values.reshape(1,-1),n_neighbors=4)
+    distance, indice = model_knn.kneighbors(train_pivot.iloc[train_pivot.index== movie].values.reshape(1,-1),n_neighbors=11)
     for i in range(0, len(distance.flatten())):
         if  i == 0:
             print('Recommendations if you like the movie {0}:\n'.format(train_pivot[train_pivot.index== movie].index[0]))
@@ -41,9 +41,9 @@ def movie_prediction(movie):
             print('{0}: {1} with distance: {2}'.format(i,train_pivot.index[indice.flatten() [i]],distance.flatten()[i]))
 
 # %%
-train
+train_pivot.head()
 
 # %%
-movie_prediction(5952)
+movie_prediction(187)
 
 # %%
